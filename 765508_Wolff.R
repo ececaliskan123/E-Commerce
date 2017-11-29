@@ -4,7 +4,7 @@ library(caret)
 library(rpart)
 library(parallel)
 #setwd("/mnt/learning/business-analytics-data-science/exercises/assignment")
-
+# Hello Hannah
 ####################
 ## GENERAL FINDINGS
 ## resulting variables are not highly correlated. The highest correlation
@@ -22,7 +22,7 @@ read_and_preprocess_data_file = function(fp) {
   d$order_date_year  = as.integer(substring(d$order_date, 0, 4))
   d$order_date_month = as.integer(substring(d$order_date, 6, 7))
   d$order_date       = as.Date(d$order_date, "%Y-%m-%d")
-  
+
   ## DELIVERY DATE
   # clean up delivery dates NULL values
   d$delivery_date[d$delivery_date == "?"] = NA
