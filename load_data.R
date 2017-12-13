@@ -1,3 +1,4 @@
+# PLEASE COPY THE CONTENTS OF THIS FILE AND FEEL FREE TO IMPROVE :D
 # This function reads in the CSV file located at fp
 # and returns a dataframe where all the unwanted values have been replaced
 read_and_preprocess_data_file = function(fp) {
