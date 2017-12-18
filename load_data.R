@@ -1,86 +1,115 @@
-# PLEASE COPY THE CONTENTS OF THIS FILE AND FEEL FREE TO IMPROVE :D
+# PLEASE COPY THE CONTENTS OF THIS FILE AND FEEL FREE TO IMPROVE
+
+standardize <- function(x){
+  mu <- mean(x)
+  std <- sd(x)
+  result <- (x - mu)/std
+
+  return(result)
+}
+
 # This function reads in the CSV file located at fp
 # and returns a dataframe where all the unwanted values have been replaced
 read_and_preprocess_data_file = function(fp) {
-  d = read.csv(fp, stringsAsFactors = FALSE)
+  sales = read.csv(fp, stringsAsFactors = FALSE)
   
-  ## DATES
-  # convert character order dates to data type and into real numbers
-  d$order_date_year  = as.integer(substring(d$order_date, 0, 4))
-  d$order_date_month = as.integer(substring(d$order_date, 6, 7))
-  d$order_date       = as.Date(d$order_date, "%Y-%m-%d")
-
-  ## DELIVERY DATE
-  # clean up delivery dates NULL values
-  d$delivery_date[d$delivery_date == "?"] = NA
-  d$delivery_date[d$delivery_date == "1990-12-31"] = NA
-  ## FULFILMENT DURATION
-  # convert to fulfilment range
-  d$delivery_date       = as.Date(d$delivery_date, "%Y-%m-%d")
-  d$fulfilment_duration = as.integer(d$delivery_date - d$order_date) # NA + date equals NA
-  # TODO: NULL value replacement strategy - use the most common
-  countFUL = table(d$fulfilment_duration)
-  typical_duration = names(countFUL)[countFUL == max(countFUL)]
-  d$fulfilment_duration[is.na(d$fulfilment_duration)] = as.integer(typical_duration)
-  
-  ## CLOTHING SIZES
-  d$item_size = toupper(d$item_size)
-  d$item_size[d$item_size == "UNSIZED"] = NA
-  # replacement strategies - sizes bought less than 500 times
-  if (is.na(rarely_bought_sizes)) {
-    rarely_bought_sizes = names(table(d$item_size))[table(d$item_size) < 500]
-  }
-  
-  d$item_size[is.element(d$item_size, rarely_bought_sizes)] = "other"
-  # NULL value replacement strategy - take the most common one
-  sizeTable = table(d$item_size)
-  typical_size = names(sizeTable)[sizeTable == max(sizeTable)]
-  d$item_size[is.na(d$item_size)] = typical_size
-  d$item_size = factor(d$item_size)
-  
-  ## ITEM COLORS
-  d$item_color[d$item_color == "brwon"] = "brown" # stupid typo
-  d$item_color[d$item_color == "?"] = NA
-  # group all colors bought less than 1000 times
-  if (is.na(rarely_bought_colors)) {
-    rarely_bought_colors = names(table(d$item_color))[table(d$item_color) < 1000]
-  }
-  d$item_color[is.element(d$item_color, rarely_bought_colors)] = "other"
-  # NULL value replacement strategy - take the most common one
-  colorTable = table(d$item_color)
-  typical_color = names(colorTable)[colorTable == max(colorTable)]
-  d$item_color[is.na(d$item_color)] = typical_color
-  d$item_color = factor(d$item_color)
-  
-  ## USER REGISTRATION DATES
-  # 29416 registrations on 2011-02-16 ... fishy...
-  d$order_reg_date_year  = as.integer(substring(d$user_reg_date, 0, 4))
-  d$order_reg_date_month = as.integer(substring(d$user_reg_date, 6, 7))
-  d$user_reg_date = as.Date(d$user_reg_date, "%Y-%m-%d")
-  
-  ## USER STATES
-  d$user_state = factor(d$user_state)
-  # some algorithms can not cope with spaces in level names so replace
-  levels(d$user_state) = gsub(" ", "-", levels(d$user_state))
+  sales$item_size [sales$item_size == "XS" ] <- "xs"
+  sales$item_size [sales$item_size == "XL" ] <- "xl"
+  sales$item_size [sales$item_size == "L" ] <- "l"
+  sales$item_size [sales$item_size == "M" ] <- "m"
+  sales$item_size [sales$item_size == "S" ] <- "s"
+  sales$item_size [sales$item_size == "XXL" ] <- "xxl"
+  sales$item_size [sales$item_size == "XXXL" ] <- "xxxl"
+  sales$item_size [sales$item_size == "36" ] <- "s"
+  sales$item_size [sales$item_size == "37" ] <- "s"
+  sales$item_size [sales$item_size == "38" ] <- "m"
+  sales$item_size [sales$item_size == "35" ] <- "xs"
+  sales$item_size [sales$item_size == "38+" ] <- "m"
+  sales$item_size [sales$item_size == "36+" ] <- "s"
+  sales$item_size [sales$item_size == "37+" ] <- "s"
+  sales$item_size [sales$item_size == "39+" ] <- "m"
+  sales$item_size [sales$item_size == "39" ] <- "m"
+  sales$item_size [sales$item_size == "40" ] <- "m"
+  sales$item_size [sales$item_size == "40+" ] <- "m"
+  sales$item_size [sales$item_size == "41" ] <- "l"
+  sales$item_size [sales$item_size == "41+" ] <- "l"
+  sales$item_size [sales$item_size == "42+" ] <- "l"
+  sales$item_size [sales$item_size == "42" ] <- "l"
+  sales$item_size [sales$item_size == "43" ] <- "l"
+  sales$item_size [sales$item_size == "43+" ] <- "xl"
+  sales$item_size [sales$item_size == "44+" ] <- "xl"
+  sales$item_size [sales$item_size == "44" ] <- "xl"
+  sales$item_size [sales$item_size == "45" ] <- "xl"
+  sales$item_size [sales$item_size == "45+" ] <- "xl"
+  sales$item_size [sales$item_size == "46" ] <- "xl"
+  sales$item_size [sales$item_size == "46+" ] <- "xl"
+  sales$item_size [sales$item_size == "47" ] <- "xxl"
+  sales$item_size [sales$item_size == "48" ] <- "xxl"
+  sales$item_size [sales$item_size == "50" ] <- "xxl"
+  sales$item_size [sales$item_size == "34" ] <- "xs"
+  sales$item_size [sales$item_size == "52" ] <- "xxxl"
+  sales$item_size [sales$item_size == "54" ] <- "xxxl"
+  sales$item_size [sales$item_size == "56" ] <- "xxxl"
 
   
-  ## USER TITLES
-  d$user_title[d$user_title == "not reported"] = "other"
-  d$user_title[d$user_title != "Mr" & d$user_title != "Mrs"] = "other"
-  d$user_title = factor(d$user_title)
+  sales$user_dob <- substring(sales$user_dob,1,4)
+  sales$user_dob [sales$user_dob == "?"] <- NA
+  sales$user_dob [sales$user_dob < 1920 ] <-NA
+  count<- table(sales$user_dob)
+  MFV <- names(count) [count == max (count)]
+  sales$user_dob [is.na(sales$user_dob)] <- MFV 
+  sales$user_dob <- as.numeric(sales$user_dob)
+
+  zScores_sales_dob <- standardize(sales$user_dob)
+  sales$user_dob [zScores_sales_dob > 3] <- round(mean(sales$user_dob) + 3*sd(sales$user_dob), digit=0)
+  sales$user_dob [zScores_sales_dob < -3] <- round(mean(sales$user_dob) - 3*sd(sales$user_dob), digit=0)
+
+  # order_date and delivery_date / data cleansing
+  sales$order_date <-   as.Date(sales$order_date, "%Y-%m-%d")
+  sales$delivery_date <- as.Date(sales$delivery_date, "%Y-%m-%d")
+  sales$delivery_duration<- difftime(sales$delivery_date , sales$order_date, units = c("days"))
+  sales$delivery_duration [sales$delivery_duration < 0] <- NA
+  sales$delivery_duration [sales$delivery_duration == "?"] <- NA
+  sales$delivery_duration [is.na (sales$delivery_duration)] <- 2 
+  sales$delivery_duration <- as.numeric(sales$delivery_duration, units="days") 
   
-  ## USER DATE OF BIRTH
-  # numerous users born on 19.11.1900 ?! - seems suspicious on histogram
-  # TODO come up with normal distribution approximation here
-  d$user_dob[d$user_dob == "?"] = NA
-  d$user_dob[d$user_dob <= "1901-01-01"] = NA
-  d$user_dob[is.na(d$user_dob)] = names(median(sort(table(d$user_dob))))
-  d$user_dob_year  = as.integer(substring(d$user_dob, 0, 4))
-  d$user_dob_month = as.integer(substring(d$user_dob, 6, 7))
-  d$user_dob = as.Date(d$user_dob, "%Y-%m-%d")
+  # item-price / data cleansing
+  sales$item_price <- as.numeric(sales$item_price)
+  sort(table(sales$item_price), decreasing = TRUE) #MFV
+  sales$item_price [is.na(sales$item_price) ] <- 59.9 
+  boxplot(sales$item_price)
+  zScores <- standardize(sales$item_price)
+  sales$item_price [zScores > 3] <- round(mean(sales$item_price) + 3*sd(sales$item_price), digit=2)
+  #boxplot(sales$item_price)
   
-  ## REMOVE ALL DATES SINCE THEY WERE REFORMATTED
-  d = subset(d, select = -c(delivery_date, user_dob, order_date, user_reg_date))
+  #user_reg_date / data cleansing
+  sales$user_reg_date <-   as.Date(sales$user_reg_date, "%Y-%m-%d")
+  sales$ user_maturity <- difftime(sales$order_date , sales$user_reg_dat, units = c("days"))
+  sales$user_maturity <- as.numeric(sales$user_maturity, units="days") 
   
-  return(d)
+  #user_title / data cleansing
+  sales$user_title [sales$user_title == "not reported"] <-NA
+  sales$user_title [is.na(sales$user_title)] <- "Mrs"
+  
+  #item_color /  data cleansing
+  sales$item_color [sales$item_color == "blau"] <- "blue"
+  sales$item_color [sales$item_color == "brwon"] <- "brown"
+  sales$item_color [sales$item_color == "oliv"] <- "olive"
+  sales$item_color [sales$item_color == "?"] <- NA
+  #sort(table(sales$item_color), decreasing = TRUE) ## MFV
+  sales$item_color [is.na (sales$item_color)] <- "black"
+  sales$user_dob <- as.numeric(sales$user_dob)
+  
+  # Month of Delivery
+  sales$month_of_delivery <- substring(sales$delivery_date,6,7)
+  sales$month_of_delivery [is.na(sales$month_of_delivery)] <- "01"
+  
+  # Factoring
+  chrIdx <- which(sapply(sales, is.character))
+  sales[, chrIdx] <- lapply( sales[, chrIdx],factor)
+  sales$item_price <- as.numeric(sales$item_price)
+  
+  # commented since the return column does not exist yet
+  #sales$return <- factor(sales$return, labels = c("keep","return"))
+  return(sales)
 }
