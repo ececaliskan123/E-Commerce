@@ -15,7 +15,7 @@ retail<-read_and_preprocess_data_file("BADS_WS1718_known.csv")
 
 class(retail$return)
 head(retail$return)
-retail$return<-factor(retail$return, levels = c(0, 1), labels = c(0, 1))
+retail$return<-factor(retail$return)
 levels(retail$return)
 head(retail$return)
 
@@ -45,12 +45,12 @@ for(n in 1:nrow(nnet.param)){
     nn<-nnet(return ~ user_dob + user_maturity + delivery_duration + user_state + item_price + item_color + item_size + month_of_delivery,
              data = cv.train,
              trace = FALSE,
-             maxit = 100,
-             MaxNWts = 10000,
+             maxit = 200, # choice based on http://cowlet.org/2014/01/12/understanding-data-science-classification-with-neural-networks-in-r.html
+             MaxNWts = 10000, # manual setting as weights exceed standard threshold of 1,000
              size = nnet.param$size[n],
              decay = nnet.param$decay[n])
-    yhat.val<-predict(nn, newdata = cv.val, type = "raw")
-    results[i, n]<-auc(as.numeric(cv.val$return)-1, as.vector(yhat.val))
+    yhat.val<-predict(nn, newdata = cv.val, type = "class")
+    results[i, n]<-auc(as.numeric(cv.val$return)-1, as.numeric(as.vector(yhat.val)))
   }
 }
 
@@ -64,14 +64,14 @@ nnet.param[opt.auc,]
 nn_tuned<-nnet(return ~ user_dob + user_maturity + delivery_duration + user_state + item_price + item_color + item_size + month_of_delivery,
                data = tr,
                trace = FALSE,
-               maxit = 1000,
-               MaxNWts = 10000,
+               maxit = 1000, # choice based on tutorial
+               MaxNWts = 10000, # manual setting as weights exceed standard threshold of 1,000
                size = nnet.param$size[opt.auc],
                decay = nnet.param$decay[opt.auc])
 
 # Predictions and performance of tuned model for test data set
 yhat<-list()
-yhat[["nn_tuned"]]<-predict(nn_tuned, newdata = ts, type = "raw")
+yhat[["nn_tuned"]]<-predict(nn_tuned, newdata = ts, type = "class")
 h <- HMeasure(true.class = as.numeric(ts$return)-1, scores = data.frame(yhat))
 h
 
