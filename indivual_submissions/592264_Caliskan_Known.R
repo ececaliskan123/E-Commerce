@@ -96,6 +96,7 @@ retail$month_of_delivery [is.na(retail$month_of_delivery)] <- "01"
 # Factoring
 chrIdx <- which(sapply(retail, is.character))
 retail[, chrIdx] <- lapply( retail[, chrIdx],factor)
+retail$return2 <- retail$return##Hyunah added
 retail$return <- factor(retail$return, labels = c("keep","return"))
 retail$item_price <- as.numeric(retail$item_price)
 

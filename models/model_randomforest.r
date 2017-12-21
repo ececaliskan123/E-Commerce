@@ -34,3 +34,24 @@ ts %>%
 ggplot(ts, aes(x = pred, y = return2)) + 
   geom_point() + 
   stat_smooth(method = 'glm', method.args = list(family = 'binomial'), se = FALSE) # Smoothed curve w/o standard errors
+
+
+#### Prediction
+library(readr)
+sales$pred <- predict(retail_model_rf, sales)$predictions
+sales$pred_return <- with(sales, ifelse(pred < 0.5, 0, 1))
+table(sales$pred_return)
+# Compare the histograms between the predicted values(Probabilities) of ts(known) and sales(class) 
+par(mfrow = c(1, 2)) # 1 row, 2 columns
+hist(ts$pred, main = 'Distribution of Predicted Probabilities for Known Data', xlab = 'Predicted Probabilities (Known Data)')
+hist(sales$pred, main = 'Distribution of Predicted Probabilities for Class Data', xlab = 'Predicted Probabilities (Class Data)')
+#Select only 2 columns for csv files(probability, class)
+sales1 <- subset(sales, select = c(order_item_id, pred))
+csv <- write_csv(sales1, 'randomforest_probability.csv')
+sales2 <- subset(sales, select = c(order_item_id, pred_return))
+csv <- write_csv(sales2, 'randomforest_class.csv')
+
+
+
+
+
