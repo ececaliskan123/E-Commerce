@@ -103,6 +103,7 @@ read_and_preprocess_data_file = function(fp) {
   # Month of Delivery
   sales$month_of_delivery <- substring(sales$delivery_date,6,7)
   sales$month_of_delivery [is.na(sales$month_of_delivery)] <- "01"
+  sales$month_of_delivery = as.numeric(sales$month_of_delivery)
   
   # Factoring
   chrIdx <- which(sapply(sales, is.character))
