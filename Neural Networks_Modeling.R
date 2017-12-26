@@ -11,7 +11,7 @@ if(!require("pROC")) install.packages("pROC"); library("pROC")
 
 source("load_data.R")
 
-retail<-read_and_preprocess_data_file("BADS_WS1718_known.csv")
+retail<-read_and_preprocess_data_file("data/BADS_WS1718_known.csv")
 
 class(retail$return)
 head(retail$return)
@@ -76,7 +76,7 @@ h <- HMeasure(true.class = as.numeric(ts$return)-1, scores = data.frame(yhat))
 h
 
 # Saving optimal nnet model
-saveRDS(nn_tuned, file = "Nnet_Model.R") 
+saveRDS(nn_tuned, file = "models/Nnet_Model.R") 
 
 # Predictions of tuned model for unknown data
 retail_class<-read_and_preprocess_data_file("BADS_WS1718_class.csv")
@@ -84,5 +84,5 @@ retail_class<-predict(normalizer, newdata = retail_class)
 pred_nnet<-predict(nn_tuned, newdata = retail_class, type = "raw")
 
 # Saving nnet class predictions
-write.csv(pred_nnet, file = "Nnet_Predictions.csv")
+write.csv(pred_nnet, file = "data/Nnet_Predictions.csv")
 
