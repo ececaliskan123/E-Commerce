@@ -77,7 +77,7 @@ read_and_preprocess_data_file = function(fp) {
   sales$item_price <- as.numeric(sales$item_price)
   sort(table(sales$item_price), decreasing = TRUE) #MFV
   sales$item_price [is.na(sales$item_price) ] <- 59.9 
-  boxplot(sales$item_price)
+  #boxplot(sales$item_price)
   zScores <- standardize(sales$item_price)
   sales$item_price [zScores > 3] <- round(mean(sales$item_price) + 3*sd(sales$item_price), digit=2)
   #boxplot(sales$item_price)
