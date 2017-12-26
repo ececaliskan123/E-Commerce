@@ -1,0 +1,37 @@
+---
+title: "Badass working title"
+author: "Ece Caliskan, Hyunah Blue?, Nicolai Sprenger, Felix Wolff"
+output: pdf_document
+---
+
+# Document objective, taken from assignment
+
+You will document, explain and justify your methodology, experiments, and results in a term paper. The main part of term paper including relevant graphs and tables excluding the reference list should not exceed 16 pages. You are required to complete the task in a group of 3-4 students for which you must register on moodle. For the assignment, you are highly encouraged to go beyond the standard methods taught in class as well as make use of the scientific literature and conduct and document your own experiments with the data. Make sure to consider all stages of a typical modeling process:
+- research the relevant technical and task-related knowledge in the literature
+- gather, clean and preprocess the relevant data
+- select the best model and model parameters
+- deploy and assess the model in terms of performance and plausibility with possibly revision of any step or the whole process.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
