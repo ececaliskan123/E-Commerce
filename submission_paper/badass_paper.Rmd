@@ -12,6 +12,33 @@ You will document, explain and justify your methodology, experiments, and result
 - select the best model and model parameters
 - deploy and assess the model in terms of performance and plausibility with possibly revision of any step or the whole process.
 
+# Why is there another document in this directory?
+(Felix) I want to propose another document style, which would be written in LaTeX. I have written my bachelor thesis with the classicthesis theme and prefer its clean look over the barebones Rmd look. It's just looks but that counts with the people reading it, too.
+Unfortunately the Rmd PDF generation is hardly customizeable.
+Let's discuss this on Jan 10.
+
+# Paper outline
+1. Abstract: What our solution achieves, anad what it is made of
+1. (debateable) survey of state-of-the-art approaches for binary classification
+1. Data cleansing (20%) and feature engineering (80%)
+  a. where are the NULL values
+  b. which values are suspicious? e.g. birthdates etc
+  c. distributions that might be bad for some models
+  d. a few words on used imputation strategies
+  e. newly engineered features and how leakage was adressed with subsampling
+2. Evaluating and building models
+  a. Agree on metric to measure model performance with - PCC, AUC, Brier...
+  b. Evaluated models and their performance
+  c. How was subsampling done uniformly across the different models
+  d. How was hyperparameter tuning done?
+  e. A short note on collaboration
+3. Model stacking
+  a. Individual model weaknesses, where does which model perform badly?
+  b. Stacking logistic regression
+  c. Resulting architecture
+  c. Performance comparison
+4. Closing remarks
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
