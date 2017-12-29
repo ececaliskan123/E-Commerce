@@ -13,12 +13,6 @@ source("load_data.R")
 
 retail<-read_and_preprocess_data_file("data/BADS_WS1718_known.csv")
 
-class(retail$return)
-head(retail$return)
-retail$return<-factor(retail$return)
-levels(retail$return)
-head(retail$return)
-
 set.seed(123)
 
 # Creating training and test data set
@@ -49,7 +43,7 @@ for(n in 1:nrow(nnet.param)){
              MaxNWts = 10000, # manual setting as weights exceed standard threshold of 1,000
              size = nnet.param$size[n],
              decay = nnet.param$decay[n])
-    yhat.val<-predict(nn, newdata = cv.val, type = "class")
+    yhat.val<-predict(nn, newdata = cv.val, type = "raw")
     results[i, n]<-auc(as.numeric(cv.val$return)-1, as.numeric(as.vector(yhat.val)))
   }
 }
@@ -71,7 +65,7 @@ nn_tuned<-nnet(return ~ user_dob + user_maturity + delivery_duration + user_stat
 
 # Predictions and performance of tuned model for test data set
 yhat<-list()
-yhat[["nn_tuned"]]<-predict(nn_tuned, newdata = ts, type = "class")
+yhat[["nn_tuned"]]<-predict(nn_tuned, newdata = ts, type = "raw")
 h <- HMeasure(true.class = as.numeric(ts$return)-1, scores = data.frame(yhat))
 h
 
