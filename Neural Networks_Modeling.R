@@ -3,7 +3,6 @@
 getwd()
 
 if(!require("nnet")) install.packages("nnet"); library("nnet")
-if(!require("NeuralNetTools")) install.packages("NeuralNetTools"); library("NeuralNetTools")
 if(!require("caret")) install.packages("caret"); library("caret")
 if(!require("ModelMetrics")) install.packages("ModelMetrics"); library("ModelMetrics")
 if(!require("hmeasure")) install.packages("hmeasure"); library("hmeasure")
@@ -58,14 +57,14 @@ nnet.param[opt.auc,]
 nn_tuned<-nnet(return ~ user_dob + user_maturity + delivery_duration + user_state + item_price + item_color + item_size + month_of_delivery,
                data = tr,
                trace = FALSE,
-               maxit = 1000, # choice based on tutorial
+               maxit = 200, # choice based on http://cowlet.org/2014/01/12/understanding-data-science-classification-with-neural-networks-in-r.html
                MaxNWts = 10000, # manual setting as weights exceed standard threshold of 1,000
                size = nnet.param$size[opt.auc],
                decay = nnet.param$decay[opt.auc])
 
 # Predictions and performance of tuned model for test data set
 yhat<-list()
-yhat[["nn_tuned"]]<-predict(nn_tuned, newdata = ts, type = "raw")
+yhat[["nn_tuned"]]<-predict(nn_tuned, newdata = ts, type = "prob")
 h <- HMeasure(true.class = as.numeric(ts$return)-1, scores = data.frame(yhat))
 h
 
@@ -75,8 +74,12 @@ saveRDS(nn_tuned, file = "models/Nnet_Model.R")
 # Predictions of tuned model for unknown data
 retail_class<-read_and_preprocess_data_file("BADS_WS1718_class.csv")
 retail_class<-predict(normalizer, newdata = retail_class)
-pred_nnet<-predict(nn_tuned, newdata = retail_class, type = "raw")
+pred_nnet_prob<-predict(nn_tuned, newdata = retail_class, type = "prob")
 
 # Saving nnet class predictions
-write.csv(pred_nnet, file = "data/Nnet_Predictions.csv")
+write.csv(pred_nnet_prob, file = "data/Nnet_Predictions_Prob.csv")
+
+# Making and saving nnet class predictions
+pred_nnet_class<-predict(nn_tuned, newdata = retail_class, type = "class")
+write.csv(pred_nnet_class, file = "data/Nnet_Predictions_Class.csv")
 
