@@ -1,5 +1,6 @@
 if(!require("caret")) install.packages("caret"); library("caret")
 if(!require("prettyR")) install.packages("prettyR"); library("prettyR")
+if(!require("sortinghat")) install.packages("sortinghat"); library("sortinghat")
 if(!require("Matrix")) install.packages("Matrix"); library("Matrix")
 if(!require("xgboost")) install.packages("xgboost"); library("xgboost")
 
@@ -20,7 +21,7 @@ best_param = list()
 best_seednumber = 1234
 best_logloss = Inf
 best_logloss_index = 0
-
+## k-fold cross validation, but unfortunately not in a repeated manner...
 for (iter in 1:100) {
   # parameter recommendations: https://www.slideshare.net/odsc/owen-zhangopen-sourcetoolsanddscompetitions1
   param = list(objective = "binary:logistic",
@@ -35,7 +36,7 @@ for (iter in 1:100) {
     base_score = 0.48174 # mean(d$return)
   )
   
-  cv.nround = 1000
+  cv.nround = 500
   cv.nfold = 5
   seed.number = sample.int(10000, 1)[[1]]
   
