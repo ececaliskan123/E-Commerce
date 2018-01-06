@@ -4,7 +4,7 @@ if(!require("sortinghat")) install.packages("sortinghat"); library("sortinghat")
 if(!require("Matrix")) install.packages("Matrix"); library("Matrix")
 if(!require("xgboost")) install.packages("xgboost"); library("xgboost")
 
-setwd("/mnt/learning/business-analytics-data-science/groupwork/")
+#setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
 
