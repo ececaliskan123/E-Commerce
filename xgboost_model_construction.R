@@ -63,13 +63,51 @@ for (iter in 1:100) {
 
 xgb.train.data = xgb.DMatrix(sparse_matrix, label = output_vector)
 nround = best_logloss_index
-set.seed(best_seednumber)
-bst = xgb.train(
-  xgb.train.data,
-  params=best_param,
-  nrounds=nround)
 
-xgb.save(bst, 'models/xgboost.model')
+# the best parameters have now been approximated
+#bst = xgb.train(
+#  xgb.train.data,
+#  params=best_param,
+#  nrounds=nround)
+
+probs = c()
+accs  = c()
+nround = 1
+bst = NULL
+
+previous_na_action <- options('na.action')
+options(na.action='na.pass')
+
+# train the final model with 632 bootstrapping
+set.seed(best_seednumber)
+for (iter in 1:400) {
+  sampled_order_ids = sample(nrow(d), replace = TRUE)
+  sampled_order_ids = unique(sampled_order_ids)
+  dds = d[sampled_order_ids,]
+  probs = append(probs, nrow(dds)/nrow(d))
+  
+  sparse_matrix = sparse.model.matrix(return~.-1, dds)
+  output_vector = dds$return == 1
+  xgb.train.data = xgb.DMatrix(sparse_matrix, label = output_vector)
+  
+  bst = xgb.train(
+    xgb.train.data,
+    params=param,
+    xgb_model = bst,
+    nrounds=nround)
+  
+  predicted_classes = predict(bst, newdata = sparse_matrix) 
+  accuracy = mean((predicted_classes > .5) == output_vector)
+  accs = append(accs, accuracy)
+}
+
+options(na.action=previous_na_action$na.action)
+plot(x=1:length(accs), y=accs, type='p')
 
 predicted_classes = predict(bst, newdata = sparse_matrix) 
+d.result = data.frame(d$order_item_id, predicted_classes)
+names(d.result) = c("order_item_id", "return")
 accuracy = mean((predicted_classes > .5) == output_vector)
+
+xgb.save(bst, 'models/xgboost.model')
+write.csv(d.result, "data/xgboost_known.csv", row.names = FALSE)
