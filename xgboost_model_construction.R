@@ -7,6 +7,7 @@ if(!require("xgboost")) install.packages("xgboost"); library("xgboost")
 #setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
+d = subset(d, select = -c(delivery_date)) # remove NAs
 
 # prevent NA omission in sparse matrix creation
 # https://stackoverflow.com/questions/29732720/sparse-model-matrix-loses-rows-in-r
@@ -100,6 +101,9 @@ for (iter in 1:400) {
   accuracy = mean((predicted_classes > .5) == output_vector)
   accs = append(accs, accuracy)
 }
+
+sparse_matrix = sparse.model.matrix(return~.-1, d)
+output_vector = d$return == 1
 
 options(na.action=previous_na_action$na.action)
 plot(x=1:length(accs), y=accs, type='p')
