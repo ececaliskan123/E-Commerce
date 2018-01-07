@@ -9,6 +9,9 @@ source('load_data.R')
 d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
 d = subset(d, select = -c(delivery_date)) # remove NAs
 
+classdata = read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
+classdata = subset(classdata, select = -c(delivery_date)) # remove NAs
+
 # prevent NA omission in sparse matrix creation
 # https://stackoverflow.com/questions/29732720/sparse-model-matrix-loses-rows-in-r
 previous_na_action <- options('na.action')
@@ -103,6 +106,7 @@ for (iter in 1:400) {
 }
 
 sparse_matrix = sparse.model.matrix(return~.-1, d)
+sparse_class_matrix = sparse.model.matrix(~.-1, classdata)
 output_vector = d$return == 1
 
 options(na.action=previous_na_action$na.action)
@@ -113,5 +117,10 @@ d.result = data.frame(d$order_item_id, predicted_classes)
 names(d.result) = c("order_item_id", "return")
 accuracy = mean((predicted_classes > .5) == output_vector)
 
+predicted_class = predict(bst, newdata = sparse_class_matrix) 
+classdata.result = data.frame(classdata$order_item_id, predicted_class)
+names(classdata.result) = c("order_item_id", "return")
+
 xgb.save(bst, 'models/xgboost.model')
 write.csv(d.result, "data/xgboost_known.csv", row.names = FALSE)
+write.csv(classdata.result, "data/xgboost_class.csv", row.names = FALSE)
