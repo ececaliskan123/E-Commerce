@@ -76,7 +76,7 @@ nn_tuned_par<-nnet(return ~ user_dob + user_maturity + delivery_duration + user_
 
 # Predictions and performance of tuned model for test data set
 yhat<-list()
-yhat[["nn_tuned_par"]]<-predict(nn_tuned, newdata = ts, type = "raw")
+yhat[["nn_tuned_par"]]<-predict(nn_tuned_par, newdata = ts, type = "raw")
 h <- HMeasure(true.class = as.numeric(ts$return)-1, scores = data.frame(yhat))
 h
 
@@ -84,8 +84,13 @@ h
 saveRDS(nn_tuned_par, file = "models/Nnet_Model_Par.R") 
 
 # Predictions of tuned model for unknown data
-retail_class<-read_and_preprocess_data_file("BADS_WS1718_class.csv")
+retail_class<-read_and_preprocess_data_file("data/BADS_WS1718_class.csv")
 retail_class<-predict(normalizer, newdata = retail_class)
+retail_class$item_color[which(as.character.factor(retail_class$item_color)=="cortina mocca")]<-NA
+retail_class$item_size[which(as.character.factor(retail_class$item_size)=="3132")]<-NA
+retail_class$item_size[which(as.character.factor(retail_class$item_size)=="4034")]<-NA
+retail_class$item_size[which(as.character.factor(retail_class$item_size)=="49")]<-NA
+
 pred_nnet_prob_par<-predict(nn_tuned_par, newdata = retail_class, type = "raw")
 pred_nnet_class_par<-predict(nn_tuned_par, newdata = retail_class, type = "class")
 
