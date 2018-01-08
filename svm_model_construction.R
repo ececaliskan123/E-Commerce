@@ -5,9 +5,10 @@ if(!require("caret")) install.packages("caret"); library("caret")
 source('load_data.R')
 d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
 d = subset(d, select = -c(delivery_date)) # remove NAs
+d$return = factor(d$return)
 
 # 10-times cross validation
-tc = tune.control(sampling = "cross")
+#tc = tune.control(sampling = "cross")
 #best_tuned_svm = best.tune(svm,
 #                      train.x = return ~ .,
 #                      kernel="radial",
@@ -20,11 +21,11 @@ tc = tune.control(sampling = "cross")
 set.seed(3233)
 trctrl = trainControl(method = "repeatedcv", number = 10, repeats = 3)
 radsvm = train(return ~ . -return,
-                    data = d,
-                    method = "svmRadial",
-                    trControl=trctrl,
-                    preProcess = c("center", "scale"),
-                    tuneLength = 10)
+                data = d,
+                method = "svmRadial",
+                trControl=trctrl,
+                preProcess = c("center", "scale"),
+                tuneLength = 10)
 
 predictions = predict(radsvm, newdata = d)
 d.result = data.frame(d$order_item_id, predictions)
