@@ -3,4 +3,5 @@
 .RData
 .Ruserdata
 *.pdf
-*.csv
+.DS_Store
+.Rproj
