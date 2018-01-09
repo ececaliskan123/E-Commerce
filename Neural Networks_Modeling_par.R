@@ -32,7 +32,7 @@ train.rnd <- tr[sample(nrow(tr)),]
 folds <- cut(1:nrow(train.rnd), breaks = k, labels = FALSE)
 
 # The number of nodes to try for the model
-nnet.param <- expand.grid("size" = seq(from = 3, to = 15, by = 3), "decay" = c(0.001, 0.01, 0.1, 1))
+nnet.param <- expand.grid("size" = seq(from = 3, to = 20, by = 1), "decay" = seq(from = 0.001, to = 0.1, by = 0.001))
 
 # Setup up parallel backend
 par_cluster <- makeCluster(max(1, detectCores()-1))
