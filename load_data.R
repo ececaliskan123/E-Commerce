@@ -71,13 +71,13 @@ read_and_preprocess_data_file = function(fp) {
   sales$delivery_duration [sales$delivery_duration < 0] <- NA
   sales$delivery_duration [sales$delivery_duration == "?"] <- NA
   sales$delivery_duration [is.na (sales$delivery_duration)] <- 2 
-  sales$delivery_duration <- as.numeric(sales$delivery_duration, units="days") 
+  sales$delivery_duration <- as.numeric(sales$delivery_duration) 
   
   # item-price / data cleansing
   sales$item_price <- as.numeric(sales$item_price)
   sort(table(sales$item_price), decreasing = TRUE) #MFV
   sales$item_price [is.na(sales$item_price) ] <- 59.9 
-  boxplot(sales$item_price)
+  #boxplot(sales$item_price)
   zScores <- standardize(sales$item_price)
   sales$item_price [zScores > 3] <- round(mean(sales$item_price) + 3*sd(sales$item_price), digit=2)
   #boxplot(sales$item_price)
@@ -85,7 +85,7 @@ read_and_preprocess_data_file = function(fp) {
   #user_reg_date / data cleansing
   sales$user_reg_date <-   as.Date(sales$user_reg_date, "%Y-%m-%d")
   sales$ user_maturity <- difftime(sales$order_date , sales$user_reg_dat, units = c("days"))
-  sales$user_maturity <- as.numeric(sales$user_maturity, units="days") 
+  sales$user_maturity <- as.numeric(sales$user_maturity) 
   
   #user_title / data cleansing
   sales$user_title [sales$user_title == "not reported"] <-NA
@@ -103,6 +103,7 @@ read_and_preprocess_data_file = function(fp) {
   # Month of Delivery
   sales$month_of_delivery <- substring(sales$delivery_date,6,7)
   sales$month_of_delivery [is.na(sales$month_of_delivery)] <- "01"
+  sales$month_of_delivery = as.numeric(sales$month_of_delivery)
   
   # Factoring
   chrIdx <- which(sapply(sales, is.character))
