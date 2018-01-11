@@ -71,15 +71,23 @@ h
 # Saving optimal nnet model
 saveRDS(nn_tuned, file = "models/Nnet_Model.R") 
 
-# Predictions of tuned model for unknown data
+# Prob predictions of tuned model for unknown data
 retail_class<-read_and_preprocess_data_file("BADS_WS1718_class.csv")
 retail_class<-predict(normalizer, newdata = retail_class)
 pred_nnet_prob<-predict(nn_tuned, newdata = retail_class, type = "prob")
 
-# Saving nnet class predictions
+# Saving nnet probability predictions for unknown data
+pred_nnet_prob<-c(retail_class$order_item_id, pred_nnet_prob$return)
+colnames(pred_nnet_prob) = c("order_item_id","return")
 write.csv(pred_nnet_prob, file = "data/Nnet_Predictions_Prob.csv")
 
-# Making and saving nnet class predictions
+# Making and saving nnet class predictions for unknown data
 pred_nnet_class<-predict(nn_tuned, newdata = retail_class, type = "class")
+pred_nnet_class<-c(retail_class$order_item_id, pred_nnet_class$return)
+colnames(pred_nnet_class) = c("order_item_id","return")
 write.csv(pred_nnet_class, file = "data/Nnet_Predictions_Class.csv")
 
+# Saving nnet probability predictions for known data
+pred_nnet_prob_known<-predict(nn_tuned, newdata = retail[,-"return"], type = "prob")
+colnames(pred_nnet_prob_known) = c("order_item_id","return")
+pred_nnet_prob_known<-c(retail$order_item_id, pred_nnet_class_par$return)
