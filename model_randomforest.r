@@ -5,6 +5,7 @@
 ### Random forest
 library(ranger)
 library(dplyr)
+library(caret)
 # From Parameter tuning file
 set.seed(124)
 n <- nrow(retail) 
@@ -34,6 +35,10 @@ ts %>%
 ggplot(ts, aes(x = pred, y = return2)) + 
   geom_point() + 
   stat_smooth(method = 'glm', method.args = list(family = 'binomial'), se = FALSE) # Smoothed curve w/o standard errors
+#Prediction for retail
+retail$pred <- predict(retail_model_rf, retail)$predictions
+retail1 <- subset(retail, select = c(order_item_id, pred))
+csv <- write_csv(retail1, 'randomforest_probability_retail.csv')
 
 
 #### Prediction

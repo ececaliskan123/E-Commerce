@@ -15,8 +15,8 @@ source("load_data.R")
 retail<-read_and_preprocess_data_file("data/BADS_WS1718_known.csv")
 
 # Convert target variable into a factor
-retail$return<-factor(retail$return, levels = c(0,1), labels = c("No Return","Return"))
-
+retail$return<-factor(retail$return, levels = c(0,1), labels = c("No","Yes"))
+retail<-na.exclude(retail)
 set.seed(123)
 
 # Creating training and test data set
