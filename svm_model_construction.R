@@ -2,7 +2,6 @@ if(!require("e1071")) install.packages("e1071"); library("e1071")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("tidyverse")) install.packages("tidyverse"); library("tidyverse")
 
-#setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
   dd = subset(dd, select = -c(order_item_id, item_color, item_size))
@@ -69,5 +68,7 @@ predictions = predict(radsvm, newdata = d)
 d.result = data.frame(d$order_item_id, predictions)
 names(d.result) = c("order_item_id", "return")
 
+
 save(radsvm, file = "models/svm.model")
 write.csv(d.result, "data/svm_predictions_known.csv", row.names = FALSE)
+write.csv(classdata.result, "data/xgboost_class.csv", row.names = FALSE)
