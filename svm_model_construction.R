@@ -1,6 +1,7 @@
 if(!require("e1071")) install.packages("e1071"); library("e1071")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("tidyverse")) install.packages("tidyverse"); library("tidyverse")
+if(!require("caret")) install.packages("caret"); library("caret")
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
@@ -39,16 +40,22 @@ dn$return = factor(d$return)
 
 set.seed(1)
 
-idx.train = createDataPartition(y = dn$return, p = 0.8, list = FALSE) 
+idx.train = createDataPartition(y = dn$return, p = 0.75, list = FALSE) 
 tr = dn[idx.train, ]
 ts = dn[-idx.train, ]
 
-trainTask  = makeClassifTask(data = dn, target = "return", positive = 1)
-svmLearner = makeLearner("classif.svm", predict.type = "prob")
+trainTask  = makeClassifTask(data = tr, target = "return", positive = 1)
+svmLearner = makeLearner(
+  "classif.ksvm",
+  predict.type = "prob",
+  par.vals = list(
+    kernel = "rbfdot"
+  )
+)
 
 svmParams = makeParamSet(
-  makeDiscreteParam("cost", values = 2^c(-5,-3,-1,1,3,5,7,9)), #cost parameters
-  makeDiscreteParam("gamma", values = 2^c(-15,-11,-7,-3,1,3)) #RBF Kernel Parameter
+  makeDiscreteParam("C", values = 2^c(-1,1)), #cost parameters
+  makeDiscreteParam("sigma", values = 2^c(2,4)) #RBF Kernel Parameter
 )
 
 control = makeTuneControlRandom(maxit = 25)
