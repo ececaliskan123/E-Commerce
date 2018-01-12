@@ -3,124 +3,99 @@ if(!require("prettyR")) install.packages("prettyR"); library("prettyR")
 if(!require("sortinghat")) install.packages("sortinghat"); library("sortinghat")
 if(!require("Matrix")) install.packages("Matrix"); library("Matrix")
 if(!require("xgboost")) install.packages("xgboost"); library("xgboost")
+if(!require("mlr")) install.packages("mlr"); library("mlr")
+if(!require("tidyverse")) install.packages("tidyverse"); library("tidyverse")
+
+amend_features = function(dd){
+  dd = subset(dd, select = -c(delivery_date))
+  dd = subset(dd, select = -c(order_item_id, item_color, item_size))
+  
+  dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
+  dd$order_month = as.numeric(format(dd$order_date, "%m"))
+  dd$order_day   = as.numeric(format(dd$order_date, "%d"))
+  dd             = subset(dd, select=-order_date)
+  
+  dd$reg_year  = as.numeric(format(dd$user_reg_date, "%Y"))
+  dd$reg_month = as.numeric(format(dd$user_reg_date, "%m"))
+  dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
+  dd           = subset(dd, select=-user_reg_date)
+  
+  dd = normalizeFeatures(dn, target="return")
+  dd = createDummyFeatures(dn, target="return", cols=c("user_state", "user_title"))
+  
+  return(dd)
+}
 
 #setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
-d = subset(d, select = -c(delivery_date)) # remove NAs
-
 classdata = read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
-classdata = subset(classdata, select = -c(delivery_date)) # remove NAs
 
-# prevent NA omission in sparse matrix creation
-# https://stackoverflow.com/questions/29732720/sparse-model-matrix-loses-rows-in-r
-previous_na_action <- options('na.action')
-options(na.action='na.pass')
-sparse_matrix = sparse.model.matrix(return~.-1, d)
-output_vector = d$return == 1
-options(na.action=previous_na_action$na.action)
+### TODO AMEND BLOCK AFTER FEATURE ENGINEERING
+dn = amend_features(d)
+classdatan = amend_features(classdata)
+###############################################
 
-# jackpot: https://stackoverflow.com/questions/35050846/xgboost-in-r-how-does-xgb-cv-pass-the-optimal-parameters-into-xgb-train
-best_param = list()
-best_seednumber = 1234
-best_logloss = Inf
-best_logloss_index = 0
-## k-fold cross validation, but unfortunately not in a repeated manner...
-for (iter in 1:100) {
-  # parameter recommendations: https://www.slideshare.net/odsc/owen-zhangopen-sourcetoolsanddscompetitions1
-  param = list(objective = "binary:logistic",
+xgb_params = makeParamSet(
+  # The number of trees in the model (each one built sequentially)
+  makeIntegerParam("nrounds", lower = 100, upper = 400),
+  # number of splits in each tree
+  makeIntegerParam("max_depth", lower = 6, upper = 10),
+  # "shrinkage" - prevents overfitting
+  makeNumericParam("eta", lower = .01, upper = .3),
+  # L2 regularization - prevents overfitting
+  makeNumericParam("lambda", lower = -1, upper = 0, trafo = function(x) 10^x)
+)
+
+trainTask = makeClassifTask(data = dn, target = "return", positive = 1)
+
+set.seed(1)
+
+# Create an xgboost learner that is classification based and outputs
+# labels (as opposed to probabilities)
+xgb_learner = makeLearner(
+  "classif.xgboost",
+  predict.type = "prob",
+  par.vals = list(
+    objective = "binary:logistic",
     eval_metric = "error",
-    max_depth = sample(6:10, 1),
-    eta = runif(1, .01, .3),
-    gamma = 0,#runif(1, 0.0, 0.2), 
-    subsample = runif(1, .6, .9),
-    colsample_bytree = runif(1, .3, .5), 
-    min_child_weight = sample(1:40, 1),
-    max_delta_step = sample(1:10, 1),
-    base_score = 0.48174 # mean(d$return)
+    nrounds = 200
   )
-  
-  cv.nround = 500
-  cv.nfold = 5
-  seed.number = sample.int(10000, 1)[[1]]
-  
-  set.seed(seed.number)
-  mdcv = xgb.cv(data = sparse_matrix,
-                label = output_vector,
-                params = param,
-                nfold=cv.nfold,
-                nrounds=cv.nround,
-                verbose = T,
-                early.stop.round=8,
-                maximize=FALSE)
-  
-  min_logloss = min(mdcv$evaluation_log[, test_error_mean])
-  min_logloss_index = mdcv$best_iteration #which.min(mdcv[, test.error.mean])
-  
-  if (min_logloss < best_logloss) {
-    best_logloss = min_logloss
-    best_logloss_index = min_logloss_index
-    best_seednumber = seed.number
-    best_param = param
-  }
-}
+)
 
-xgb.train.data = xgb.DMatrix(sparse_matrix, label = output_vector)
-nround = best_logloss_index
+control = makeTuneControlRandom(maxit = 25)
+resample_desc = makeResampleDesc("CV", iters = 5)
 
-# the best parameters have now been approximated
-#bst = xgb.train(
-#  xgb.train.data,
-#  params=best_param,
-#  nrounds=nround)
+tuned_params = tuneParams(
+  learner = xgb_learner,
+  task = trainTask,
+  resampling = resample_desc,
+  par.set = xgb_params,
+  control = control
+)
 
-probs = c()
-accs  = c()
-nround = 1
-bst = NULL
+# Create a new model using tuned hyperparameters
+xgb_tuned_learner = setHyperPars(
+  learner = xgb_learner,
+  par.vals = tuned_params$x
+)
 
-previous_na_action <- options('na.action')
-options(na.action='na.pass')
+# Re-train parameters using tuned hyperparameters (and full training set)
+xgb_model = train(xgb_tuned_learner, trainTask)
+predicted_classes = predict(xgb_model, newdata = dn)
+predicted_class   = predict(xgb_model, newdata = classdata) 
 
-# train the final model with 632 bootstrapping
-set.seed(best_seednumber)
-for (iter in 1:400) {
-  sampled_order_ids = sample(nrow(d), replace = TRUE)
-  sampled_order_ids = unique(sampled_order_ids)
-  dds = d[sampled_order_ids,]
-  probs = append(probs, nrow(dds)/nrow(d))
-  
-  sparse_matrix = sparse.model.matrix(return~.-1, dds)
-  output_vector = dds$return == 1
-  xgb.train.data = xgb.DMatrix(sparse_matrix, label = output_vector)
-  
-  bst = xgb.train(
-    xgb.train.data,
-    params=param,
-    xgb_model = bst,
-    nrounds=nround)
-  
-  predicted_classes = predict(bst, newdata = sparse_matrix) 
-  accuracy = mean((predicted_classes > .5) == output_vector)
-  accs = append(accs, accuracy)
-}
-
-sparse_matrix = sparse.model.matrix(return~.-1, d)
-sparse_class_matrix = sparse.model.matrix(~.-1, classdata)
-output_vector = d$return == 1
-
-options(na.action=previous_na_action$na.action)
-plot(x=1:length(accs), y=accs, type='p')
-
-predicted_classes = predict(bst, newdata = sparse_matrix) 
-d.result = data.frame(d$order_item_id, predicted_classes)
+d.result = data.frame(d$order_item_id, predicted_classes$data$prob.1)
 names(d.result) = c("order_item_id", "return")
-accuracy = mean((predicted_classes > .5) == output_vector)
+accuracy = mean(predicted_classes$data$response == predicted_classes$data$truth)
 
-predicted_class = predict(bst, newdata = sparse_class_matrix) 
-classdata.result = data.frame(classdata$order_item_id, predicted_class)
+classdata.result = data.frame(classdata$order_item_id, predicted_class$data$prob.1)
 names(classdata.result) = c("order_item_id", "return")
 
-xgb.save(bst, 'models/xgboost.model')
+# TODO put in known class hack
+d.result[is.na(d$delivery_date), "return"] = 0
+classdata.result[is.na(classdata$delivery_date), "return"] = 0
+
+save(xgb_model, file = "models/xgboost.model")
 write.csv(d.result, "data/xgboost_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/xgboost_class.csv", row.names = FALSE)
