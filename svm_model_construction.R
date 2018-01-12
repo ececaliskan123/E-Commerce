@@ -1,45 +1,74 @@
-if(!require("parallel")) install.packages("parallel"); library("parallel")
-if(!require("caret")) install.packages("caret"); library("caret")
 if(!require("e1071")) install.packages("e1071"); library("e1071")
+if(!require("mlr")) install.packages("mlr"); library("mlr")
+if(!require("tidyverse")) install.packages("tidyverse"); library("tidyverse")
+
+amend_features = function(dd){
+  dd = subset(dd, select = -c(delivery_date))
+  dd = subset(dd, select = -c(order_item_id, item_color, item_size))
+  
+  dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
+  dd$order_month = as.numeric(format(dd$order_date, "%m"))
+  dd$order_day   = as.numeric(format(dd$order_date, "%d"))
+  dd             = subset(dd, select=-order_date)
+  
+  dd$reg_year  = as.numeric(format(dd$user_reg_date, "%Y"))
+  dd$reg_month = as.numeric(format(dd$user_reg_date, "%m"))
+  dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
+  dd           = subset(dd, select=-user_reg_date)
+  
+  if ("return" %in% colnames (dd)) {
+    dd = normalizeFeatures(dd, target="return")
+    dd = createDummyFeatures(dd, target="return", cols=c("user_state", "user_title"))
+  } else {
+    dd = createDummyFeatures(dd, cols=c("user_state", "user_title"))
+  }
+  
+  return(dd)
+}
 
 #setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
-d = subset(d, select = -c(delivery_date)) # remove NAs
-d$return = factor(d$return)
-
 classdata = read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
-classdata = subset(classdata, select = -c(delivery_date)) # remove NAs
 
-# 10-times cross validation
-set.seed(3233)
-tc = tune.control(sampling = "cross")
-radsvm = best.tune(svm,
-		   train.x = return ~ .,
-		   kernel="radial",
-		   data = d,
-		   traincontrol = tc,
-		   ranges=list(cost=10^(-2:1), gamma=2^(-2:2)))
-#radsvm = svm(return ~ . -return,
-#                     data = d,
-#                     kernel = "radial")
-#trctrl = trainControl(method = "repeatedcv", number = 10, repeats = 3)
+### TODO AMEND BLOCK AFTER FEATURE ENGINEERING
+dn = amend_features(d)
+classdatan = amend_features(classdata)
+###############################################
+dn$return = factor(d$return)
 
-#radsvm = train(return ~ . -return,
-#                data = d,
-#                method = "svmRadial",
-#                trControl=trctrl,
-#                preProcess = c("center", "scale"),
-#                tuneLength = 10)
+set.seed(1)
+
+idx.train = createDataPartition(y = dn$return, p = 0.8, list = FALSE) 
+tr = dn[idx.train, ]
+ts = dn[-idx.train, ]
+
+trainTask  = makeClassifTask(data = dn, target = "return", positive = 1)
+svmLearner = makeLearner("classif.svm", predict.type = "prob")
+
+svmParams = makeParamSet(
+  makeDiscreteParam("cost", values = 2^c(-5,-3,-1,1,3,5,7,9)), #cost parameters
+  makeDiscreteParam("gamma", values = 2^c(-15,-11,-7,-3,1,3)) #RBF Kernel Parameter
+)
+
+control = makeTuneControlRandom(maxit = 25)
+resample_desc = makeResampleDesc("CV", iters = 5)
+
+tuned_params = tuneParams(
+  learner = svmLearner,
+  task = trainTask,
+  resampling = resample_desc,
+  par.set = svmParams,
+  control = control
+)
+
+########################################
 
 predictions = predict(radsvm, newdata = d)
 d.result = data.frame(d$order_item_id, predictions)
 names(d.result) = c("order_item_id", "return")
 
-predicted_class = predict(bst, newdata = classdata) 
-classdata.result = data.frame(classdata$order_item_id, predicted_class)
-names(classdata.result) = c("order_item_id", "return")
 
 save(radsvm, file = "models/svm.model")
-write.csv(d.result, "data/svm_known.csv", row.names = FALSE)
-write.csv(classdata.result, "data/svm_class", row.names = FALSE)
+write.csv(d.result, "data/svm_predictions_known.csv", row.names = FALSE)
+write.csv(classdata.result, "data/xgboost_class.csv", row.names = FALSE)
