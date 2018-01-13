@@ -1,4 +1,3 @@
-if(!require("e1071")) install.packages("e1071"); library("e1071")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("tidyverse")) install.packages("tidyverse"); library("tidyverse")
 if(!require("caret")) install.packages("caret"); library("caret")
@@ -47,10 +46,7 @@ ts = dn[-idx.train, ]
 trainTask  = makeClassifTask(data = tr, target = "return", positive = 1)
 svmLearner = makeLearner(
   "regr.LiblineaRL2L1SVR",
-  predict.type = "prob",
-  par.vals = list(
-    kernel = "rbfdot"
-  )
+  predict.type = "prob"
 )
 
 svmParams = makeParamSet(
