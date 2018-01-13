@@ -27,6 +27,7 @@ amend_features = function(dd){
   return(dd)
 }
 
+# good arguments agains pure svm approach: https://datascience.stackexchange.com/questions/989/svm-using-scikit-learn-runs-endlessly-and-never-completes-execution
 #setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
@@ -46,20 +47,20 @@ ts = dn[-idx.train, ]
 
 trainTask  = makeClassifTask(data = tr, target = "return", positive = 1)
 svmLearner = makeLearner(
-  "classif.ksvm",
+  "classif.svm",
   predict.type = "prob",
   par.vals = list(
-    kernel = "rbfdot"
+    kernel = "radial"
   )
 )
 
 svmParams = makeParamSet(
-  makeDiscreteParam("C", values = 2^c(-1,1)), #cost parameters
-  makeDiscreteParam("sigma", values = 2^c(2,4)) #RBF Kernel Parameter
+  makeDiscreteParam("cost", values = 2^c(-1,1)), #cost parameters
+  makeDiscreteParam("gamma", values = 2^c(2,4)) #RBF Kernel Parameter
 )
 
 control = makeTuneControlRandom(maxit = 25)
-resample_desc = makeResampleDesc("CV", iters = 5)
+resample_desc = makeResampleDesc("CV", iters = 20)
 
 tuned_params = tuneParams(
   learner = svmLearner,
