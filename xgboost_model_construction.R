@@ -1,4 +1,3 @@
-if(!require("caret")) install.packages("caret"); library("caret")
 if(!require("prettyR")) install.packages("prettyR"); library("prettyR")
 if(!require("sortinghat")) install.packages("sortinghat"); library("sortinghat")
 if(!require("Matrix")) install.packages("Matrix"); library("Matrix")
@@ -20,8 +19,8 @@ amend_features = function(dd){
   dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
   dd           = subset(dd, select=-user_reg_date)
   
-  dd = normalizeFeatures(dn, target="return")
-  dd = createDummyFeatures(dn, target="return", cols=c("user_state", "user_title"))
+  dd = normalizeFeatures(dd, target="return")
+  dd = createDummyFeatures(dd, target="return", cols=c("user_state", "user_title"))
   
   return(dd)
 }
@@ -35,6 +34,17 @@ classdata = read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
 dn = amend_features(d)
 classdatan = amend_features(classdata)
 ###############################################
+set.seed(1)
+
+idx.train = caret::createDataPartition(y = dn$return, p = 0.75, list = FALSE) 
+tr = dn[idx.train, ]
+ts = dn[-idx.train, ]
+
+# e columns correspond to classes and their 
+# names are the class labels (if unnamed we
+# use y1 to yk as labels). Each entry (i,j) of the matrix
+# specifies the cost of predicting class j for observation i.
+# TODO set d$return labels and colnames accordingly
 
 xgb_params = makeParamSet(
   # The number of trees in the model (each one built sequentially)
@@ -44,12 +54,12 @@ xgb_params = makeParamSet(
   # "shrinkage" - prevents overfitting
   makeNumericParam("eta", lower = .01, upper = .3),
   # L2 regularization - prevents overfitting
-  makeNumericParam("lambda", lower = -1, upper = 0, trafo = function(x) 10^x)
+  makeNumericParam("lambda", lower = -1, upper = 0, trafo = function(x) 10^x),
+  makeNumericParam("gamma",  lower = 0,  upper = 0.3),
+  makeNumericParam("subsample", lower = 0.6, upper = 0.9)
 )
 
-trainTask = makeClassifTask(data = dn, target = "return", positive = 1)
-
-set.seed(1)
+trainTask = makeClassifTask(data = tr, target = "return", positive = 1)
 
 # Create an xgboost learner that is classification based and outputs
 # labels (as opposed to probabilities)
@@ -59,11 +69,12 @@ xgb_learner = makeLearner(
   par.vals = list(
     objective = "binary:logistic",
     eval_metric = "error",
-    nrounds = 200
+    nrounds = 200,
+    base_score = mean(tr$return)
   )
 )
 
-control = makeTuneControlRandom(maxit = 25)
+control = makeTuneControlRandom(maxit = 30)
 resample_desc = makeResampleDesc("CV", iters = 5)
 
 tuned_params = tuneParams(
@@ -83,13 +94,13 @@ xgb_tuned_learner = setHyperPars(
 # Re-train parameters using tuned hyperparameters (and full training set)
 xgb_model = train(xgb_tuned_learner, trainTask)
 predicted_classes = predict(xgb_model, newdata = dn)
-predicted_class   = predict(xgb_model, newdata = classdata) 
+predicted_class   = predict(xgb_model, newdata = classdata)
 
-d.result = data.frame(d$order_item_id, predicted_classes$data$prob.1)
+d.result = data.frame(d$order_item_id, predicted_classes$data$response)
 names(d.result) = c("order_item_id", "return")
-accuracy = mean(predicted_classes$data$response == predicted_classes$data$truth)
+accuracy = mean(d.result[-idx.train,]$return == ts$return)
 
-classdata.result = data.frame(classdata$order_item_id, predicted_class$data$prob.1)
+classdata.result = data.frame(classdata$order_item_id, predicted_class$data$response)
 names(classdata.result) = c("order_item_id", "return")
 
 # TODO put in known class hack
