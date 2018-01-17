@@ -97,10 +97,10 @@ pred_nnet_prob_par<-predict(nn_tuned_par, newdata = retail_class_norm, type = "r
 # Saving nnet probability predictions for unknown data
 pred_nnet_prob_par<-cbind(retail_class$order_item_id, pred_nnet_prob_par)
 colnames(pred_nnet_prob_par) = c("order_item_id","return")
-write.csv(pred_nnet_prob_par, file = "data/nnet_class.csv")
+write.csv(pred_nnet_prob_par, file = "data/nnet_class.csv", row.names = FALSE)
 
 # Saving nnet probability predictions for known data
 pred_nnet_prob_known_par<-predict(nn_tuned_par, newdata = subset(retail, select = -return), type = "raw")
 pred_nnet_prob_known_par<-cbind(retail$order_item_id, pred_nnet_prob_known_par)
 colnames(pred_nnet_prob_known_par) = c("order_item_id","return")
-write.csv(pred_nnet_prob_known_par, file = "data/nnet_known.csv")
+write.csv(pred_nnet_prob_known_par, file = "data/nnet_known.csv", row.names = FALSE)
