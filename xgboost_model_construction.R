@@ -19,9 +19,11 @@ amend_features = function(dd){
   dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
   dd           = subset(dd, select=-user_reg_date)
   
-  dd = normalizeFeatures(dd, target="return")
-  dd = createDummyFeatures(dd, target="return", cols=c("user_state", "user_title"))
-  
+  if("return" %in% colnames(dd)) {
+    dd = normalizeFeatures(dd, target="return")
+    dd = createDummyFeatures(dd, target="return", cols=c("user_state", "user_title"))
+  }
+
   return(dd)
 }
 
@@ -96,11 +98,11 @@ xgb_model = train(xgb_tuned_learner, trainTask)
 predicted_classes = predict(xgb_model, newdata = dn)
 predicted_class   = predict(xgb_model, newdata = classdata)
 
-d.result = data.frame(d$order_item_id, predicted_classes$data$response)
+d.result = data.frame(d$order_item_id, predicted_classes$data$prob.1)
 names(d.result) = c("order_item_id", "return")
-accuracy = mean(d.result[-idx.train,]$return == ts$return)
+accuracy = mean(predicted_classes$data[-idx.train,]$truth == ts$return)
 
-classdata.result = data.frame(classdata$order_item_id, predicted_class$data$response)
+classdata.result = data.frame(classdata$order_item_id, predicted_class$data$prob.1)
 names(classdata.result) = c("order_item_id", "return")
 
 # TODO put in known class hack
