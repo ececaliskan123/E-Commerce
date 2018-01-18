@@ -110,6 +110,9 @@ read_and_preprocess_data_file = function(fp) {
   sales[, chrIdx] <- lapply( sales[, chrIdx],factor)
   sales$item_price <- as.numeric(sales$item_price)
   
+  # A new feature
+  sales$price_and_age <- sales$item_price * sales$user_dob
+  
   # commented since the return column does not exist yet
   #sales$return <- factor(sales$return, labels = c("keep","return"))
   return(sales)
