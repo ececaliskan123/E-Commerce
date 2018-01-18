@@ -1,5 +1,4 @@
-if(!require("mlr")) install.packages("mlr"); library("mlr")
-
+if(!require("caret")) install.packages("caret"); library("caret")
 #setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 
@@ -36,22 +35,22 @@ stopifnot(known_labels_complete && class_labels_complete)
 df_known = data.frame(xgboost_known$order_item_id,
                       xgboost_known$return,
                       rf_known$pred,
-                      #nnet_known$pred,
+                      nnet_known$return,
                       d$return)
-df_class = data.frame(xgboost_class$order_item_id,
-                      xgboost_class$return,
-                      rf_class$pred)#,
-#                      nnet_class$return)
+df_class = data.frame(xgboost_known$order_item_id,
+                      xgboost_known$return,
+                      rf_known$pred,
+                      nnet_known$return)
 
 colnames(df_known) = c("order_item_id",
                        "xgboost_return",
                        "rf_return",
-                       "nnet_return")
-#                       "return")
+                       "nnet_return",
+                       "return")
 colnames(df_class) = c("order_item_id",
                        "xgboost_return",
-                       "rf_return")#,
-#                       "nnet_return")
+                       "rf_return",
+                       "nnet_return")
 
 # create cost matrix
 cost = data.frame(ifelse(d$return == 0, 0, 2.5*(3+0.1*d$item_price)),
@@ -64,30 +63,33 @@ colnames(cost) = make.names(c("X0","X1"))
 
 # create test and training sets
 set.seed(1)
-
-idx.train = caret::createDataPartition(y = d$return, p = 0.75, list = FALSE) 
+#df_known$return[df_known$return == 0] = "X0"
+#df_known$return[df_known$return == 1] = "X1"
+df_known$return = factor(df_known$return)
+idx.train = caret::createDataPartition(y = df_known$return, p = 0.75, list = FALSE) 
 tr = df_known[idx.train, ]
 ts = df_known[-idx.train, ]
 
-tc  = trainControl("CV", 5, savePredictions=F)
-fit = train(return ~ . -return,
-             data      = df_known,
-             method    = "glm",
-             family    = binomial,
-             trControl = tc)
+fitControl <- trainControl(## 10-fold CV
+  method = "cv",
+  number = 10)
 
+stack_model <- caret::train(return ~ xgboost_return + rf_return + nnet_return,
+                        data = tr, 
+                        method = "glm", 
+                        trControl = fitControl)
 # create final predictions
-predicted_classes = predict(stack_model, newdata = subset(df_known, select = -c(return)))
-predicted_class   = predict(stack_model, newdata = df_class)
+predicted_classes = predict(stack_model, newdata = df_known)
+#predicted_class   = predict(stack_model, newdata = df_class)
 
 # assess performance
-d.result = data.frame(d$order_item_id, ifelse(predicted_classes$data$response == "X0",0,1))
+d.result = data.frame(d$order_item_id, predicted_classes)
 names(d.result) = c("order_item_id", "return")
 accuracy = mean(d.result[-idx.train,]$return == ts$return)
 total_accuracy = mean(d$return == d.result$return)
 
-classdata.result = data.frame(classdata$order_item_id, predicted_class$data$response)
-names(classdata.result) = c("order_item_id", "return")
+#classdata.result = data.frame(classdata$order_item_id, predicted_class$data$response)
+#names(classdata.result) = c("order_item_id", "return")
 
 # put in NA column hack
 d.result[is.na(d$delivery_date), "return"] = 0
