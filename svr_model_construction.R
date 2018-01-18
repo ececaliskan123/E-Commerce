@@ -46,7 +46,7 @@ ts = dn[-idx.train, ]
 trainTask  = makeClassifTask(data = tr, target = "return", positive = 1)
 svmLearner = makeLearner(
   "regr.LiblineaRL2L1SVR",
-  predict.type = "prob"
+  predict.type = "twoclass"
 )
 
 svmParams = makeParamSet(
