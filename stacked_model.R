@@ -1,4 +1,5 @@
 if(!require("mlr")) install.packages("mlr"); library("mlr")
+
 #setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 
@@ -35,22 +36,22 @@ stopifnot(known_labels_complete && class_labels_complete)
 df_known = data.frame(xgboost_known$order_item_id,
                       xgboost_known$return,
                       rf_known$pred,
-#                      nnet_known$return,
+                      #nnet_known$pred,
                       d$return)
-df_class = data.frame(xgboost_known$order_item_id,
-                      xgboost_known$return,
-                      rf_known$pred,
-                      nnet_known$return)
+df_class = data.frame(xgboost_class$order_item_id,
+                      xgboost_class$return,
+                      rf_class$pred)#,
+#                      nnet_class$return)
 
 colnames(df_known) = c("order_item_id",
                        "xgboost_return",
                        "rf_return",
-#                       "nnet_return",
-                       "return")
+                       "nnet_return")
+#                       "return")
 colnames(df_class) = c("order_item_id",
                        "xgboost_return",
-                       "rf_return",
-                       "nnet_return")
+                       "rf_return")#,
+#                       "nnet_return")
 
 # create cost matrix
 cost = data.frame(ifelse(d$return == 0, 0, 2.5*(3+0.1*d$item_price)),
@@ -64,44 +65,20 @@ colnames(cost) = make.names(c("X0","X1"))
 # create test and training sets
 set.seed(1)
 
-idx.train = caret::createDataPartition(y = df_known$return, p = 0.75, list = FALSE) 
+idx.train = caret::createDataPartition(y = d$return, p = 0.75, list = FALSE) 
 tr = df_known[idx.train, ]
 ts = df_known[-idx.train, ]
 
-# tune hyperparameters
-stack_params = makeParamSet(
-  makeNumericParam("cost", lower = 0, upper = 10, trafo = function(x) 2^x),
-  makeNumericParam("epsilon", lower = 0, upper = 10)
-)
-
-trainTask = makeCostSensTask(data = tr,
-                             cost = cost[idx.train,])
-control = makeTuneControlRandom(maxit = 50)
-resample_desc = makeResampleDesc("CV", iters = 10)
-
-stack_learner = makeLearner(
-  "classif.LiblineaRL2LogReg",
-  predict.type = "prob"
-)
-stack_learner = makeCostSensClassifWrapper(stack_learner)
-
-tuned_params = tuneParams(
-  learner = stack_learner,
-  task = trainTask,
-  resampling = resample_desc,
-  par.set = stack_params,
-  control = control)
-
-# train stacked model
-stack_tuned_learner = setHyperPars(
-  learner = stack_learner,
-  par.vals = tuned_params$x
-)
-stack_model = train(stack_learner, trainTask)
+tc  = trainControl("CV", 5, savePredictions=F)
+fit = train(return ~ . -return,
+             data      = df_known,
+             method    = "glm",
+             family    = binomial,
+             trControl = tc)
 
 # create final predictions
-predicted_classes = predict(stack_model, newdata = df_known)
-#predicted_class   = predict(stack_model, newdata = df_class)
+predicted_classes = predict(stack_model, newdata = subset(df_known, select = -c(return)))
+predicted_class   = predict(stack_model, newdata = df_class)
 
 # assess performance
 d.result = data.frame(d$order_item_id, ifelse(predicted_classes$data$response == "X0",0,1))
@@ -109,8 +86,8 @@ names(d.result) = c("order_item_id", "return")
 accuracy = mean(d.result[-idx.train,]$return == ts$return)
 total_accuracy = mean(d$return == d.result$return)
 
-#classdata.result = data.frame(classdata$order_item_id, predicted_class$data$response)
-#names(classdata.result) = c("order_item_id", "return")
+classdata.result = data.frame(classdata$order_item_id, predicted_class$data$response)
+names(classdata.result) = c("order_item_id", "return")
 
 # put in NA column hack
 d.result[is.na(d$delivery_date), "return"] = 0
