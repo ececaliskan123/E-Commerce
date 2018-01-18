@@ -110,7 +110,40 @@ read_and_preprocess_data_file = function(fp) {
   sales[, chrIdx] <- lapply( sales[, chrIdx],factor)
   sales$item_price <- as.numeric(sales$item_price)
   
+  # A new feature 
+  sales$price_and_age <- sales$item_price * sales$user_dob
+  
   # commented since the return column does not exist yet
   #sales$return <- factor(sales$return, labels = c("keep","return"))
   return(sales)
 }
+
+# Specify the 'keys' i.e. ID variables for additional speed gains when merging or sorting
+setkey(raw, user_id, item_id, order_item_id)
+
+# Splitting the data into a test and a training set 
+idx.train <- caret::createDataPartition(y = raw$return, p = 0.8, list = FALSE) # Draw a random, stratified sample including p percent of the data
+
+# Use data.table to calculate grouped summary statistics efficiently
+customers <- raw[ ,  mean(return), by = "user_id"]
+# Every piece of information could be relevant, here for example the number of times a customer came back
+customers <- raw[ , list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]
+# Careful: When using the target variable as a feature, only calculate it on the training data
+# You can merge data tables X and Y using the syntax X[Y]
+raw <- raw[ raw[idx.train, list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]]
+
+# Tackle cleaning and featurization problems with data science and statistics
+length(unique(raw$item_size))
+unique(raw$item_size)
+
+sizes <- raw[, list("count" = .N), by = c("user_id", "item_size") ]
+sizes_table <- dcast(sizes, user_id ~ item_size, value.var = "count", fill = 0)
+sizes_sim <- cor(sizes_table[,2:length(sizes_table)])
+#sizes_sim <- dist(sizes_table[,2:length(sizes_table)], method = "cosine")
+sizes_sim[c("S", "M", "L"),]
+sizes_cluster <- hclust(as.dist(1-abs(sizes_sim)), method = "ward.D2")
+plot(sizes_cluster)
+rect.hclust(sizes_cluster, k=9, border="red")
+# Use the size cluster instead of or in addition to the original sizes
+sizes_grouping <- cutree(sizes_cluster, k=5) # cut tree into 5 clusters
+
