@@ -76,7 +76,7 @@ xgb_learner = makeLearner(
   )
 )
 
-control = makeTuneControlRandom(maxit = 30)
+control = makeTuneControlRandom(maxit = 50)
 resample_desc = makeResampleDesc("CV", iters = 5)
 
 tuned_params = tuneParams(
@@ -94,13 +94,14 @@ xgb_tuned_learner = setHyperPars(
 )
 
 # Re-train parameters using tuned hyperparameters (and full training set)
-xgb_model = train(xgb_tuned_learner, trainTask)
+xgb_model = mlr::train(xgb_tuned_learner, trainTask)
 predicted_classes = predict(xgb_model, newdata = dn)
 predicted_class   = predict(xgb_model, newdata = classdata)
 
 d.result = data.frame(d$order_item_id, predicted_classes$data$prob.1)
 names(d.result) = c("order_item_id", "return")
-accuracy = mean(predicted_classes$data[-idx.train,]$truth == ts$return)
+accuracy = mean(predicted_classes$data[-idx.train,]$response == ts$return)
+total_accuracy = mean(ifelse(d.result$return > 0.5, 1,0) == d$return)
 
 classdata.result = data.frame(classdata$order_item_id, predicted_class$data$prob.1)
 names(classdata.result) = c("order_item_id", "return")
@@ -112,3 +113,4 @@ classdata.result[is.na(classdata$delivery_date), "return"] = 0
 save(xgb_model, file = "models/xgboost.model")
 write.csv(d.result, "data/xgboost_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/xgboost_class.csv", row.names = FALSE)
+# 0.72059 accuracy before eces changes
