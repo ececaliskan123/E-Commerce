@@ -7,3 +7,4 @@
 .Rproj
 ts_norm.csv
 tr_norm.csv
+xgboost.model
