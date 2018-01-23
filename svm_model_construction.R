@@ -41,26 +41,25 @@ dn$return = factor(d$return)
 
 set.seed(1)
 
-idx.train = createDataPartition(y = dn$return, p = 0.75, list = FALSE) 
+idx.train = createDataPartition(y = dn$return, p = 0.8, list = FALSE) 
 tr = dn[idx.train, ]
 ts = dn[-idx.train, ]
 
 trainTask  = makeClassifTask(data = tr, target = "return", positive = 1)
 svmLearner = makeLearner(
-  "classif.svm",
-  predict.type = "prob",
+  "classif.lssvm",
+  predict.type = "response",
   par.vals = list(
-    kernel = "radial"
+    kernel = "rbfdot"
   )
 )
 
 svmParams = makeParamSet(
-  makeDiscreteParam("cost", values = 2^c(-1,1)), #cost parameters
-  makeDiscreteParam("gamma", values = 2^c(2,4)) #RBF Kernel Parameter
+  makeDiscreteParam("sigma", values = 2^c(1))
 )
 
-control = makeTuneControlRandom(maxit = 25)
-resample_desc = makeResampleDesc("CV", iters = 20)
+control = makeTuneControlRandom(maxit = 1)
+resample_desc = makeResampleDesc("CV", iters = 5)
 
 tuned_params = tuneParams(
   learner = svmLearner,
