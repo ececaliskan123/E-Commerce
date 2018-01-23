@@ -57,8 +57,8 @@ colnames(df_class) = c("order_item_id",
 levels(df_known$return) = c("return0", "return1")
 
 # create cost matrix
-cost = data.frame(ifelse(df_known$return == 0, 0, 2.5*(3+0.1*d$item_price)),
-                  ifelse(df_known$return == 1, 0, 0.5 * d$item_price))
+cost = data.frame(ifelse(df_known$return == 0, 0, 0.5 * d$item_price),
+                  ifelse(df_known$return == 1, 0, 2.5*(3+0.1*d$item_price)))
 colnames(cost) = levels(df_known$return)
 rownames(cost) = rownames(d)
 
@@ -77,7 +77,7 @@ ts = df_known[-idx.train, ]
 # train the regression
 trainTask = makeCostSensTask(data = tr,
                              cost = cost[idx.train,])
-resample_desc = makeResampleDesc("Bootstrap", iters = 100)
+resample_desc = makeResampleDesc("CV", iters = 50)
 
 stack_learner = makeLearner(
   "classif.logreg",
