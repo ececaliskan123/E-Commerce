@@ -47,18 +47,18 @@ ts = dn[-idx.train, ]
 
 trainTask  = makeClassifTask(data = tr, target = "return", positive = 1)
 svmLearner = makeLearner(
-  "classif.lssvm",
-  predict.type = "response",
+  "classif.ksvm",
+  predict.type = "prob",
   par.vals = list(
     kernel = "rbfdot"
   )
 )
 
 svmParams = makeParamSet(
-  makeDiscreteParam("sigma", values = 2^c(1))
+  makeNumericParam("C", lower = -5, upper = 5, trafo = function(x) 2^x)
 )
 
-control = makeTuneControlRandom(maxit = 1)
+control = makeTuneControlRandom(maxit = 20)
 resample_desc = makeResampleDesc("CV", iters = 5)
 
 tuned_params = tuneParams(
