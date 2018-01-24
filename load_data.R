@@ -113,28 +113,33 @@ read_and_preprocess_data_file = function(fp) {
 <<<<<<< HEAD
   # A new feature 
 =======
+
   # A new feature
 >>>>>>> e657592d60f5018a02bd1f24d4afef3599b76fbb
+
   sales$price_and_age <- sales$item_price * sales$user_dob
   
+  # Specify the 'keys' i.e. ID variables for additional speed gains when merging or sorting
+  setkey(raw, user_id, item_id, order_item_id)
+  
+  # Splitting the data into a test and a training set 
+  idx.train <- caret::createDataPartition(y = sales$return, p = 0.8, list = FALSE) # Draw a random, stratified sample including p percent of the data
+  
+  # Use data.table to calculate grouped summary statistics efficiently
+  customers <- sales[ ,  mean(return), by = "user_id"]
+  # Every piece of information could be relevant, here for example the number of times a customer came back
+  customers <- sales[ , list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]
+  # Careful: When using the target variable as a feature, only calculate it on the training data
+  # You can merge data tables X and Y using the syntax X[Y]
+  sales <- sales[ sales[idx.train, list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]]
   # commented since the return column does not exist yet
   #sales$return <- factor(sales$return, labels = c("keep","return"))
   return(sales)
+  
+  
 }
 
-# Specify the 'keys' i.e. ID variables for additional speed gains when merging or sorting
-setkey(raw, user_id, item_id, order_item_id)
 
-# Splitting the data into a test and a training set 
-idx.train <- caret::createDataPartition(y = raw$return, p = 0.8, list = FALSE) # Draw a random, stratified sample including p percent of the data
-
-# Use data.table to calculate grouped summary statistics efficiently
-customers <- raw[ ,  mean(return), by = "user_id"]
-# Every piece of information could be relevant, here for example the number of times a customer came back
-customers <- raw[ , list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]
-# Careful: When using the target variable as a feature, only calculate it on the training data
-# You can merge data tables X and Y using the syntax X[Y]
-raw <- raw[ raw[idx.train, list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]]
 
 # Tackle cleaning and featurization problems with data science and statistics
 length(unique(raw$item_size))
