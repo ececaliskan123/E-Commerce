@@ -40,7 +40,7 @@ classdatan = amend_features(classdata)
 ###############################################
 set.seed(1)
 
-idx.train = caret::createDataPartition(y = dn$return, p = 0.75, list = FALSE) 
+idx.train = caret::createDataPartition(y = dn$return, p = 0.8, list = FALSE) 
 tr = dn[idx.train, ]
 ts = dn[-idx.train, ]
 
