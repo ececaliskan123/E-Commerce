@@ -62,10 +62,6 @@ cost = data.frame(ifelse(df_known$return == 0, 0, 0.5 * d$item_price),
 colnames(cost) = levels(df_known$return)
 rownames(cost) = rownames(d)
 
-# check correlations of models
-#results <- resamples(list(mod1 = mod.rf, mod2 = mod.svm)) 
-#modelCor(results) 
-
 # create test and training sets
 set.seed(1)
 
