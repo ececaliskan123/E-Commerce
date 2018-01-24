@@ -110,7 +110,11 @@ read_and_preprocess_data_file = function(fp) {
   sales[, chrIdx] <- lapply( sales[, chrIdx],factor)
   sales$item_price <- as.numeric(sales$item_price)
   
+<<<<<<< HEAD
   # A new feature 
+=======
+  # A new feature
+>>>>>>> e657592d60f5018a02bd1f24d4afef3599b76fbb
   sales$price_and_age <- sales$item_price * sales$user_dob
   
   # commented since the return column does not exist yet
