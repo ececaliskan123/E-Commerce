@@ -10,7 +10,7 @@ library(caret)
 set.seed(124)
 n <- nrow(retail) 
 sample.size <- ceiling(n*0.8)
-idx.train <- createDataPartition(y =retail$return2, p = 0.75, list = FALSE) 
+idx.train <- createDataPartition(y =retail$return2, p = 0.8, list = FALSE) 
 tr <- retail[idx.train, ]  # training set
 ts <- retail[-idx.train, ] # test set 
 # The return column
@@ -56,6 +56,11 @@ retail2 <- subset(retail, select = c(order_item_id, pred2))
 csv <- write_csv(retail1, 'randomforest_probability_retail_5CV.csv')
 csv1 <- write_csv(retail2, 'randomforest_probability_retail_bootstrap632.csv')
 
+
+# Saving optimal rf model
+saveRDS(retail_model_rf2, file = "models/RF_Model_Par.R") 
+
+
 # Accuracy
 prob.pred_known  = as.vector(retail$pred)
 class.pred_known  = ifelse(prob.pred_known > 0.5, "1", "0")
@@ -65,6 +70,7 @@ prob.pred_known  = as.vector(retail$pred2)
 class.pred_known  = ifelse(prob.pred_known > 0.5, "1", "0")
 confusionMatrix(data = class.pred_known, reference = retail$return2, positive = "1")
 
+retail$pred_class = ifelse(prob.pred_known > 0.5, "1", "0")
 
 #### Prediction
 library(readr)
