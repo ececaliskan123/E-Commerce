@@ -7,7 +7,7 @@ if(!require("tidyverse")) install.packages("tidyverse"); library("tidyverse")
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
-  dd = subset(dd, select = -c(order_item_id, item_size, item_color))
+  dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color))
   
   dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
   dd$order_month = as.numeric(format(dd$order_date, "%m"))
@@ -21,9 +21,9 @@ amend_features = function(dd){
   
   if("return" %in% colnames(dd)) {
     dd = normalizeFeatures(dd, target="return")
-    dd = createDummyFeatures(dd, target="return", cols=c("user_state", "user_title"))
+    dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
   } else {
-    dd = createDummyFeatures(dd, cols=c("user_state", "user_title"))
+    dd = createDummyFeatures(dd, cols=c("item_size"))
   }
 
   return(dd)
@@ -31,12 +31,12 @@ amend_features = function(dd){
 
 #setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
-d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
-classdata = read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
+#d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
+#classdata = read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
 
 ### TODO AMEND BLOCK AFTER FEATURE ENGINEERING
-dn = amend_features(d)
-classdatan = amend_features(classdata)
+dn = amend_features(df_known)
+classdatan = amend_features(df_class)
 ###############################################
 set.seed(1)
 
@@ -98,21 +98,20 @@ xgb_tuned_learner = setHyperPars(
 # Re-train parameters using tuned hyperparameters (and full training set)
 xgb_model = mlr::train(xgb_tuned_learner, trainTask)
 predicted_classes = predict(xgb_model, newdata = dn)
-predicted_class   = predict(xgb_model, newdata = classdata)
+predicted_class   = predict(xgb_model, newdata = classdatan)
 
-d.result = data.frame(d$order_item_id, predicted_classes$data$prob.1)
+d.result = data.frame(df_known$order_item_id, predicted_classes$data$prob.1)
 names(d.result) = c("order_item_id", "return")
 accuracy = mean(predicted_classes$data[-idx.train,]$response == ts$return)
-total_accuracy = mean(ifelse(d.result$return > 0.5, 1,0) == d$return)
+total_accuracy = mean(ifelse(d.result$return > 0.5, 1,0) == df_known$return)
 
-classdata.result = data.frame(classdata$order_item_id, predicted_class$data$prob.1)
+classdata.result = data.frame(df_class$order_item_id, predicted_class$data$prob.1)
 names(classdata.result) = c("order_item_id", "return")
 
 # TODO put in known class hack
-d.result[is.na(d$delivery_date), "return"] = 0
-classdata.result[is.na(classdata$delivery_date), "return"] = 0
+d.result[is.na(df_known$delivery_date), "return"] = 0
+classdata.result[is.na(df_class$delivery_date), "return"] = 0
 
-save(xgb_model, file = "models/xgboost.model")
+save(xgb_model, file = "models/xgboost_mlr.model")
 write.csv(d.result, "data/xgboost_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/xgboost_class.csv", row.names = FALSE)
-# 0.72059 accuracy before eces changes
