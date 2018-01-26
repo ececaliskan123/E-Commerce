@@ -6,9 +6,8 @@ standardize <- function(x){
   return(result)
 }
 
-# This function reads in the CSV file located at fp
-# and returns a dataframe where all the unwanted values have been replaced
-read_and_preprocess_data_file = function(fp) {
+..static_user_statistics <- NULL
+..read_and_preprocess_data_file = function(fp) {
   sales = read.csv(fp, stringsAsFactors = FALSE)
   
   sales$item_size [sales$item_size == "XS" ] <- "xs"
@@ -115,16 +114,23 @@ read_and_preprocess_data_file = function(fp) {
   data.table::setkey(sales, user_id, item_id, order_item_id)
   
   # Splitting the data into a test and a training set 
-  idx.train <- caret::createDataPartition(y = sales$return, p = 0.8, list = FALSE) # Draw a random, stratified sample including p percent of the data
+  #idx.train <- caret::createDataPartition(y = sales$return, p = 0.8, list = FALSE) # Draw a random, stratified sample including p percent of the data
   
   # Use data.table to calculate grouped summary statistics efficiently
-  customers <- sales[ ,  .(mean(return)), by = .(user_id)]
+  #customers <- sales[ ,  .(mean(return)), by = .(user_id)]
   # Every piece of information could be relevant, here for example the number of times a customer came back
-  customers <- sales[ , list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]
+  #customers <- sales[ , list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]
   # Careful: When using the target variable as a feature, only calculate it on the training data
   # You can merge data tables X and Y using the syntax X[Y]
-  sales <- sales[ sales[idx.train, list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]]
+  if ("return" %in% colnames(sales)) {
+    ..static_user_statistics <<- sales[, list("avg_return" = mean(return)), by = "user_id"]
+  }
+  sales = data.frame(merge(x = sales, y = ..static_user_statistics, by = "user_id", all.x = TRUE))
+  #sales = sales[ ..static_user_statistics ]
   # commented since the return column does not exist yet
   #sales$return <- factor(sales$return, labels = c("keep","return"))
   return(sales)
 }
+
+df_known = ..read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
+df_class = ..read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
