@@ -1,14 +1,7 @@
 # mlr with neuralnet, 5 fold CV
+
+if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("nnet")) install.packages("nnet"); library("nnet")
-
-
-# unloadNamespace('data.table')
-# unloadNamespace('reshape2')
-# unloadNamespace('plyr')
-
-install.packages("data.table", type="source", dependencies=TRUE)
-
-# if(!require("mlr")) install.packages("mlr"); library("mlr")
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
