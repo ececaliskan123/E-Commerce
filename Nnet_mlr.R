@@ -2,7 +2,7 @@
 
 if(!require("nnet")) install.packages("nnet"); library("nnet")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
-if(!require("hmeasure")) install.packages("hmeasure"); library("hmeasure")
+if(!require("data.table")) install.packages("data.table"); library("data.table")
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
@@ -66,11 +66,11 @@ set_cv <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
 # TODO implement final parameter ranges
 getParamSet("classif.nnet")
 gs <- makeParamSet(
-  makeIntegerParam("size", lower = 3, upper = 5),
-  makeNumericParam("MaxNWts", lower = 10000, upper = 10000),
-  makeNumericParam("maxit", lower = 200, upper = 200),
-  #makeDiscreteParam("MaxNWts", values = "10000"),
-  #makeDiscreteParam("maxit", values = c("100", "200", "300")),
+  makeIntegerParam("size", lower = 3, upper = 4),
+  # makeNumericParam("MaxNWts", lower = 10000, upper = 10000),
+  # makeNumericParam("maxit", lower = 200, upper = 200),
+  makeDiscreteParam("MaxNWts", values = 10000),
+  makeDiscreteParam("maxit", values = c("100", 200, 300)),
   makeNumericParam("decay", lower = 1e-08, upper = 0.01)
 )
 # Perform grid search
