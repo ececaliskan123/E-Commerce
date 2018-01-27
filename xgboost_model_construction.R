@@ -115,3 +115,13 @@ classdata.result[is.na(df_class$delivery_date), "return"] = 0
 save(xgb_model, file = "models/xgboost_mlr.model")
 write.csv(d.result, "data/xgboost_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/xgboost_class.csv", row.names = FALSE)
+
+if (FALSE) {
+  importance = xgb.importance(feature_names = colnames(tr), model = xgb_model$learner.model)
+  s_cols = robustHD::standardize(importance[,c("Gain","Cover","Frequency")])
+  importance = data.frame(importance[,"Feature"], s_cols)
+  head(importance)
+  
+  pd.xgboost = generatePartialDependenceData(xgb_model, trainTask, "item_price")
+  plotPartialDependence(pd.xgboost)
+}
