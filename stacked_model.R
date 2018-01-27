@@ -12,8 +12,8 @@ rf_known = read.csv("data/randomforest_probability_retail.csv", stringsAsFactors
 rf_class = read.csv("data/randomforest_probability.csv", stringsAsFactors = FALSE)
 nnet_known = read.csv("data/nnet_known.csv", stringsAsFactors = FALSE)
 nnet_class = read.csv("data/nnet_class.csv", stringsAsFactors = FALSE)
-d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
-c = read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
+d = read.csv('data/BADS_WS1718_known.csv')
+c = read.csv('data/BADS_WS1718_class.csv')
 
 # sort everything first
 xgboost_known = xgboost_known[order(xgboost_known$order_item_id),]
@@ -57,8 +57,8 @@ colnames(df_class) = c("order_item_id",
 levels(df_known$return) = c("return0", "return1")
 
 # create cost matrix
-cost = data.frame(ifelse(df_known$return == 0, 0, 0.5 * d$item_price),
-                  ifelse(df_known$return == 1, 0, 2.5*(3+0.1*d$item_price)))
+cost = data.frame(ifelse(df_known$return == 0, 0, 2.5 * (3+0.1*d$item_price)),
+                  ifelse(df_known$return == 1, 0, 0.5 * d$item_price))
 colnames(cost) = levels(df_known$return)
 rownames(cost) = rownames(d)
 
