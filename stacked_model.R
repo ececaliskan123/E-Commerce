@@ -107,3 +107,13 @@ classdata.result[is.na(c$delivery_date), "return"] = 0
 # and write out final predictions
 write.csv(d.result, "data/stacked_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/stacked_class.csv", row.names = FALSE)
+
+if (FALSE) {
+  d.result$truth = d$return
+  d.result$cost  = NA
+  
+  d.result[(d.result$truth == 1) == (d.result$return == 0),"cost"] = (d[(d.result$truth == 1) == (d.result$return == 0),"item_price"]*0.1+3)*2.5
+  d.result[(d.result$truth == 0) == (d.result$return == 1),"cost"] =  d[(d.result$truth == 0) == (d.result$return == 1),"item_price"]*0.5
+  d.result[is.na(d.result$cost),"cost"] = 0
+  sum(d.result$cost)
+}
