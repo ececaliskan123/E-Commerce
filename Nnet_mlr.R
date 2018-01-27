@@ -2,6 +2,7 @@
 
 if(!require("nnet")) install.packages("nnet"); library("nnet")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
+if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMap")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
 
 amend_features = function(dd){
@@ -59,6 +60,9 @@ auc <- list()
 # ACC performance for each model
 acc <- list()
 
+# Activate parallel computing
+parallelStartSocket(3)
+
 # Choose 5 fold CV with stratified sampling
 set_cv <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
 
@@ -66,11 +70,11 @@ set_cv <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
 # TODO implement final parameter ranges
 getParamSet("classif.nnet")
 gs <- makeParamSet(
-  makeIntegerParam("size", lower = 3, upper = 4),
+  makeIntegerParam("size", lower = 3, upper = 30),
   # makeNumericParam("MaxNWts", lower = 10000, upper = 10000),
   # makeNumericParam("maxit", lower = 200, upper = 200),
   makeDiscreteParam("MaxNWts", values = 10000),
-  makeDiscreteParam("maxit", values = c("100", 200, 300)),
+  makeDiscreteParam("maxit", values = c(100, 200, 300)),
   makeNumericParam("decay", lower = 1e-08, upper = 0.01)
 )
 # Perform grid search
@@ -83,6 +87,10 @@ tuning <- tuneParams(
   control = gscontrol,
   measures = mlr::auc)
 
+# Stop parallelization
+parallelStop()
+
+# View optimal hyperparameters
 tuning$x
 
 # Select best parameters and retrain model on whole training set
