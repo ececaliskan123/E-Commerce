@@ -71,22 +71,20 @@ set_cv <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
 # Hyperparamter tuning
 # TODO implement final parameter ranges
 getParamSet("classif.nnet")
-gs <- makeParamSet(
-  makeIntegerParam("size", lower = 3, upper = 30),
-  # makeNumericParam("MaxNWts", lower = 10000, upper = 10000),
-  # makeNumericParam("maxit", lower = 200, upper = 200),
+rs <- makeParamSet(
+  makeIntegerParam("size", lower = 3L, upper = 200L),
   makeDiscreteParam("MaxNWts", values = 10000),
-  makeDiscreteParam("maxit", values = c(100, 200, 300)),
-  makeNumericParam("decay", lower = 1e-08, upper = 0.001)
+  makeDiscreteParam("maxit", values = 200),
+  makeNumericParam("decay", lower = 1e-08, upper = 1e-02)
 )
 # Perform grid search
-gscontrol <- makeTuneControlGrid(tune.threshold = TRUE)
+rscontrol <- makeTuneControlRandom(maxit = 100L, tune.threshold = TRUE)
 tuning <- tuneParams(
   learner = makeannet, 
   resampling = set_cv, 
   task = trainTask, 
-  par.set = gs, 
-  control = gscontrol,
+  par.set = rs, 
+  control = rscontrol,
   measures = mlr::auc)
 
 # Stop parallelization
