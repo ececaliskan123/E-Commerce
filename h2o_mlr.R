@@ -1,4 +1,4 @@
-# h2o with neuralnet, 5 fold CV
+# mlr with h2o, 5 fold CV
 
 if(!require("h2o")) install.packages("h2o"); library("h2o")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
@@ -65,36 +65,36 @@ acc <- list()
 parallelStartSocket(parallel::detectCores()-1)
 
 # Choose 5 fold CV with stratified sampling
-set_cv <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
+set_cv <- makeResampleDesc("CV", iters = 5L, stratify = TRUE)
 
 # Hyperparamter tuning
 getParamSet("classif.h2o.deeplearning")
-gs <- makeParamSet(
+rs <- makeParamSet(
   makeDiscreteParam("activation", values = c("RectifierWithDropout", "TanhWithDropout")),
   # Three layers are theoretically enough to approximate any arbitrarily complex function
-  makeIntegerVectorParam("hidden", len = 3, lower = c(32, 32, 32), upper = c(32, 32, 32)),
+  makeIntegerVectorParam("hidden", len = 3L, lower = c(32, 32, 32), upper = c(64, 64, 64)), # TODO 64, 64, 64
   # Default equals 10, outcome is sensitive to number of iterations (epochs) according to the h2o.ai handbook
-  # makeDiscreteParam("epochs", values = c(10, 20, 30)),
+  makeDiscreteParam("epochs", values = 10L),
   # Adaptive learning speeds up the learning process and minimizes error on both training and test dataset according to Srivastava, N. et al. (2014)
-  makeNumericParam("rho", lower = 0.9, upper = 0.99),
-  makeNumericParam("epsilon", lower = 1e-10, upper = 10^-04),
+  makeNumericParam("rho", lower = 0.9, upper = 0.99), # TODO 0.9 to 0.99
+  makeNumericParam("epsilon", lower = 1e-10, upper = 1e-4), # TODO 1e-10 to 1e-4
   # Dropout regulaization outperforms traditional regularization methods according to Srivastava, N. et al. (2014)
   # As a rule of thumb, choose either 0.1 or 0.2 according to the h2o handbook from h2o.ai
-  makeNumericParam("input_dropout_ratio", lower = 0, upper = 0.2),
-  # Handbook and Srivastava, N. et al. (2014) differ in terms of parameter choice. Hence, we tune over the union of both parameter spaces
-  makeNumericVectorParam("hidden_dropout_ratios", len = 3, lower = c(0.1, 0.1, 0.1), upper = c(0.8, 0.8, 0.8)),
+  makeNumericParam("input_dropout_ratio", lower = 0, upper = 0.2), # TODO 0 to 0.2
+  # Handbook and Srivastava, N. et al. (2014) differ in terms of parameter choice. Hence, we tune over the union of both parameter spaces 
+  makeNumericVectorParam("hidden_dropout_ratios", len = 3L, lower = c(0.1, 0.1, 0.1), upper = c(0.8, 0.8, 0.8)), # TODO 0.1 to 0.8
   # max-norm regularization increases the performance when dropout regularization is used. Typical values lie between 3 and 4 according to Srivastava, N. et al. (2014)
-  makeNumericParam("max_w2", lower = 3, upper = 4)
+  makeNumericParam("max_w2", lower = 3L, upper = 4L)
 )
-?makeNumericParam
+
 # Perform grid search
-gscontrol <- makeTuneControlGrid(tune.threshold = TRUE)
+rancontrol <- makeTuneControlRandom(maxit = 100L, tune.threshold = TRUE)
 tuning <- tuneParams(
   learner = makeh2o, 
   resampling = set_cv, 
   task = trainTask, 
-  par.set = gs, 
-  control = gscontrol,
+  par.set = rs, 
+  control = rancontrol,
   measures = mlr::auc
 )
 
