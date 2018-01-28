@@ -3,7 +3,9 @@
 if(!require("nnet")) install.packages("nnet"); library("nnet")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMap")
+if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
+
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
@@ -60,8 +62,8 @@ auc <- list()
 # ACC performance for each model
 acc <- list()
 
-# Activate parallel computing
-parallelStartSocket(3)
+# Activate parallel computing with all cores
+parallelStartSocket(parallel::detectCores()-1)
 
 # Choose 5 fold CV with stratified sampling
 set_cv <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
@@ -75,7 +77,7 @@ gs <- makeParamSet(
   # makeNumericParam("maxit", lower = 200, upper = 200),
   makeDiscreteParam("MaxNWts", values = 10000),
   makeDiscreteParam("maxit", values = c(100, 200, 300)),
-  makeNumericParam("decay", lower = 1e-08, upper = 0.01)
+  makeNumericParam("decay", lower = 1e-08, upper = 0.001)
 )
 # Perform grid search
 gscontrol <- makeTuneControlGrid(tune.threshold = TRUE)
