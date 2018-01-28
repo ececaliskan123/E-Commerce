@@ -3,14 +3,13 @@
 if(!require("nnet")) install.packages("nnet"); library("nnet")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMap")
-if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
+# if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
-
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
-  dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color))
-  
+  dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color, item_price, item_size))
+# Nicolai added the feature item_price and item_size to the previous line due to low RF variable importance scores
   dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
   dd$order_month = as.numeric(format(dd$order_date, "%m"))
   dd$order_day   = as.numeric(format(dd$order_date, "%d"))
@@ -23,15 +22,14 @@ amend_features = function(dd){
   
   if("return" %in% colnames(dd)) {
     dd = normalizeFeatures(dd, target="return")
-    dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
+    # dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
   } else {
-    dd = createDummyFeatures(dd, cols=c("item_size"))
+    # dd = createDummyFeatures(dd, cols=c("item_size"))
   }
-
+# Nicolai deselected createDummyFeatures due to the deletion of fetures item_size and item_price (see above)
   return(dd)
 }
 
-# TODO WHAT THE F IS HAPPENING HERE? Error in data.table(sales) : could not find function "data.table"
 # setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 #d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
@@ -63,19 +61,19 @@ auc <- list()
 acc <- list()
 
 # Activate parallel computing with all cores
-parallelStartSocket(parallel::detectCores()-1)
+parallelStartSocket(parallel::detectCores())
 
 # Choose 5 fold CV with stratified sampling
-set_cv <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
+set_cv <- makeResampleDesc("CV", iters = 5L, stratify = TRUE)
 
 # Hyperparamter tuning
 # TODO implement final parameter ranges
 getParamSet("classif.nnet")
 rs <- makeParamSet(
-  makeIntegerParam("size", lower = 3L, upper = 200L),
+  makeIntegerParam("size", lower = 3L, upper = 30L),
   makeDiscreteParam("MaxNWts", values = 10000),
-  makeDiscreteParam("maxit", values = 200),
-  makeNumericParam("decay", lower = 1e-08, upper = 1e-02)
+  makeDiscreteParam("maxit", values = 100),
+  makeNumericParam("decay", lower = 1e-06, upper = 1e-01)
 )
 # Perform grid search
 rscontrol <- makeTuneControlRandom(maxit = 100L, tune.threshold = TRUE)
@@ -95,31 +93,32 @@ tuning$x
 
 # Select best parameters and retrain model on whole training set
 tuned.nnet<-setHyperPars(makeannet, par.vals = tuning$x)
-modelLib[["nnet"]]<-mlr::train(tuned.nnet, trainTask)
+nnet_model<-mlr::train(tuned.nnet, trainTask)
 
 # Save model
-save(modelLib[["nnet"]], file = "models/nnet_mlr.model")
+save(nnet_model, file = "models/nnet_mlr.model")
 
 # Predict on test set and assess performance based on auc and acc
-# TODO adjust command for optimal threshold
-yhat[["nnet_prob_test"]]<-predict(modelLib[["nnet"]], testTask)
-yhat[["nnet_class_test"]]<-ifelse(yhat[["nnet_prob_test"]]> tuning$x[["tune.threshold"]], 1, 0)
-auc[["nnet_test"]]<-mlr::performance(yhat[["nnet_class_test"]], measures = mlr::auc)
-acc[["nnet_test"]]<-mlr::performance(yhat[["nnet_class_test"]], measures = mlr::acc)
+yhat[["nnet_prob_test"]]<-predict(nnet_model, testTask)
+yhat[["nnet_class_test"]]<-yhat[["nnet_prob_test"]]$data$response
+auc[["nnet_test"]]<-mlr::performance(yhat[["nnet_prob_test"]], measures = mlr::auc)
+auc[["nnet_test"]]
+acc[["nnet_test"]]<-mean(yhat[["nnet_class_test"]] == yhat[["nnet_prob_test"]]$data$truth)
+acc[["nnet_test"]]
 
 # Use tuned model to predict whole known dataset
-yhat[["nnet_known"]]<-predict(modelLib[["nnet"]], newdata = dn)
+yhat[["nnet_known"]]<-predict(nnet_model, newdata = dn)
 
 # Use tuned model to predict whole class dataset
-yhat[["nnet_class"]]<-predict(modelLib[["nnet"]], newdata = classdatan)
+yhat[["nnet_class"]]<-predict(nnet_model, newdata = classdatan)
 
 # Create an object containing order_item_id and predicted probabilities for known dataset
 d.result<-data.frame(df_known$order_item_id, yhat[["nnet_known"]]$data$prob.1)
 names(d.result)<-c("order_item_id", "return")
 
 # Assess total accuracy on known dataset 
-# TODO adjust command for optimal threshold
-acc[["nnet_total"]]<-mean(ifelse(d.result$return > tuning$x[["tune.threshold"]], 1,0) == df_known$return)
+acc[["nnet_total"]]<-mean(ifelse(d.result$return > 0.5, 1, 0) == df_known$return)
+acc[["nnet_total"]]
 
 # Create an object containing order_item_id and predicted probabilities for class dataset
 classdata.result = data.frame(df_class$order_item_id, yhat[["nnet_class"]]$data$prob.1)
