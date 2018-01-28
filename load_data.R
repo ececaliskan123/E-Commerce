@@ -8,7 +8,13 @@ standardize <- function(x){
   return(result)
 }
 
-..static_user_statistics <- NULL
+..mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+..known_user_order_counts = NULL
+..static_user_statistics  = NULL
 ..read_and_preprocess_data_file = function(fp) {
   sales = read.csv(fp, stringsAsFactors = FALSE)
   
@@ -124,13 +130,42 @@ standardize <- function(x){
   #customers <- sales[ , list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]
   # Careful: When using the target variable as a feature, only calculate it on the training data
   # You can merge data tables X and Y using the syntax X[Y]
+  userids = sort(unique(sales$user_id))
   if ("return" %in% colnames(sales)) {
     ..static_user_statistics <<- sales[, list("avg_return" = mean(return)), by = "user_id"]
+    
+    countrow = function(uid) {
+      return(cumsum(sales[sales$user_id == uid, "item_price"] != -10))
+    }
+    ..cumulated_itemcount <<- unlist(sapply(userids, countrow))
+    sales$cumulated_itemcount[with(sales, order(user_id))] = ..cumulated_itemcount
+    ..known_user_order_counts <<- aggregate(sales$cumulated_itemcount, by = list(uid=sales$user_id),  FUN=max)
+    
+    
+    orders_per_user = df_known %>%
+      group_by(user_id) %>%
+      summarize(norder=n())
+    
+    df_known = data.frame(merge(x = df_known,
+                                y = orders_per_user,
+                                by = "user_id"))
+  } else {
+    countrow = function(uid) {
+      old = 0
+      
+      if (uid %in% ..known_user_order_counts$uid) {
+        old = ..known_user_order_counts[..known_user_order_counts$uid == uid, "x"]
+      }
+      
+      return(cumsum(sales[sales$user_id == uid, "item_price"] != -10) + old)
+    }
+    cumulated_itemcount <<- unlist(sapply(userids, countrow))
+    sales$cumulated_itemcount[with(sales, order(user_id))] = cumulated_itemcount
   }
+  
   sales = data.frame(merge(x = sales, y = ..static_user_statistics, by = "user_id", all.x = TRUE))
-  #sales = sales[ ..static_user_statistics ]
-  # commented since the return column does not exist yet
-  #sales$return <- factor(sales$return, labels = c("keep","return"))
+  sales[is.na(sales$avg_return), "avg_return"] = ..mode(..static_user_statistics$avg_return)
+
   return(sales)
 }
 
