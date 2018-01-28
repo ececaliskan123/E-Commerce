@@ -72,11 +72,11 @@ getParamSet("classif.nnet")
 rs <- makeParamSet(
   makeIntegerParam("size", lower = 3L, upper = 30L),
   makeDiscreteParam("MaxNWts", values = 10000),
-  makeDiscreteParam("maxit", values = 50),
+  makeDiscreteParam("maxit", values = 100),
   makeNumericParam("decay", lower = 1e-06, upper = 1e-01)
 )
 # Perform grid search
-rscontrol <- makeTuneControlRandom(maxit = 50L, tune.threshold = TRUE)
+rscontrol <- makeTuneControlRandom(maxit = 100L, tune.threshold = TRUE)
 tuning <- tuneParams(
   learner = makeannet, 
   resampling = set_cv, 
@@ -97,7 +97,6 @@ nnet_model<-mlr::train(tuned.nnet, trainTask)
 
 # Save model
 save(nnet_model, file = "models/nnet_mlr.model")
-yhat[["nnet_prob_test"]]$data$truth
 
 # Predict on test set and assess performance based on auc and acc
 yhat[["nnet_prob_test"]]<-predict(nnet_model, testTask)
