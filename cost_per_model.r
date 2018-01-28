@@ -25,7 +25,7 @@ df_known$cost_randomized[h] <- 0.5*(df_known$item_price[h])
 
 # Sum of the cost
 randomized_cost_sum <- sum(df_known$cost_randomized)
-randomized_cost_sum #1473405 
+randomized_cost_sum #1,473,405 
 
 
 ### Random Forest cost
@@ -46,7 +46,7 @@ df_known$cost_rf[b] <- 0.5*(df_known$item_price[b])
 
 # Sum of the cost
 rf_cost_sum <- sum(df_known$cost_rf)
-rf_cost_sum #243997.7
+rf_cost_sum #244,189.7
 
 ### NN cost
 df_known$pred_nn_prob <- nnet_known$return
@@ -66,7 +66,7 @@ df_known$cost_nn[d] <- 0.5*(df_known$item_price[d])
 
 # Sum of the cost
 nn_cost_sum <- sum(df_known$cost_nn)
-nn_cost_sum
+nn_cost_sum #541,835.7
 
 ### xgboost cost
 df_known$pred_xg_prob <- xgboost_known$return
@@ -86,8 +86,7 @@ df_known$cost_xg[f] <- 0.5*(df_known$item_price[f])
 
 # Sum of the cost
 xg_cost_sum <- sum(df_known$cost_xg)
-xg_cost_sum #508233.6
-
+xg_cost_sum #508,233.6
 
 
 
