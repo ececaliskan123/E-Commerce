@@ -49,6 +49,7 @@ round(cor(dn), 2)
 model <- glm (random_class ~ ., data = dn, family = binomial)
 
 ### Calculate VIF
-vif(model)
+vif_test <- vif(model)
+print(max(vif_test))
 # No VIF > 10
 ## Decision: Keep all variables
