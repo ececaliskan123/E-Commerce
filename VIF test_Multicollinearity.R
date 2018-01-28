@@ -1,4 +1,4 @@
-# VIF test for multicollinearity between "return" and "avg_return"
+### VIF test for multicollinearity between "return" and "avg_return"
 
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
