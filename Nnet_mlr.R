@@ -115,7 +115,7 @@ d.result<-data.frame(df_known$order_item_id, yhat[["nnet_known"]]$data$prob.1)
 names(d.result)<-c("order_item_id", "return")
 
 # Assess total accuracy on known dataset 
-acc[["nnet_total"]]<-mean(ifelse(d.result$return > 0.5, 1, 0) == df_known$return)
+acc[["nnet_total"]]<-mean(ifelse(d.result$return > yhat[["nnet_known"]]$threshold[1], 1, 0) == df_known$return)
 acc[["nnet_total"]]
 
 # Create an object containing order_item_id and predicted probabilities for class dataset
