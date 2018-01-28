@@ -1,4 +1,4 @@
-# mlr with h2o, 5 fold CV
+## mlr with h2o, 5 fold CV
 
 if(!require("h2o")) install.packages("h2o"); library("h2o")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
@@ -9,7 +9,7 @@ if(!require("data.table")) install.packages("data.table"); library("data.table")
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
   dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color, item_price, item_size))
-  # Nicolai added the feature item_price and item_size to the previous line due to low RF variable importance scores
+  # Added the feature item_price and item_size to the previous line due to low RF variable importance scores
   dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
   dd$order_month = as.numeric(format(dd$order_date, "%m"))
   dd$order_day   = as.numeric(format(dd$order_date, "%d"))
@@ -20,16 +20,13 @@ amend_features = function(dd){
   dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
   dd           = subset(dd, select=-user_reg_date)
   
-  dd$return = as.factor(dd$return)
-  # Nicolai added the previous line for h2o
-  
   if("return" %in% colnames(dd)) {
     dd = normalizeFeatures(dd, target="return")
     # dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
   } else {
     # dd = createDummyFeatures(dd, cols=c("item_size"))
   }
-  # Nicolai deselected createDummyFeatures due to the deletion of fetures item_size and item_price (see above)
+  # Deselected createDummyFeatures due to the deletion of fetures item_size and item_price (see above)
   return(dd)
 }
 
@@ -52,10 +49,8 @@ ts = dn[-idx.train, ]
 trainTask <- makeClassifTask(data = tr, target = "return", positive = "1")
 testTask <- makeClassifTask(data = ts, target = "return", positive = "1")
 # Learner
-makeh2o <- makeLearner("classif.h2o.deeplearning", predict.type="response")
+makeh2o <- makeLearner("classif.h2o.deeplearning", predict.type="prob")
 # Set up a structure to save the expected results
-# A number of models
-modelLib <- list()
 # Test set predictions
 yhat <- list()
 # AUC performance for each model
@@ -63,10 +58,7 @@ auc <- list()
 # ACC performance for each model
 acc <- list()
 
-# TODO Activate parallel computing with all cores
-# parallelStartSocket(parallel::detectCores()-1)
-
-# Choose 5 fold CV with stratified sampling
+# Choose 5 fold CV with stratified sampling (no significant performance loss compared with 10 fold CV or 632 bootstrapping)
 set_cv <- makeResampleDesc("CV", iters = 5L, stratify = TRUE)
 
 # Hyperparamter tuning
@@ -84,13 +76,13 @@ rs <- makeParamSet(
   # As a rule of thumb, choose either 0.1 or 0.2 according to the h2o handbook from h2o.ai
   makeNumericParam("input_dropout_ratio", lower = 0, upper = 0.2), # TODO 0 to 0.2
   # Handbook and Srivastava, N. et al. (2014) differ in terms of parameter choice. Hence, we tune over the union of both parameter spaces 
-  makeNumericVectorParam("hidden_dropout_ratios", len = 3L, lower = c(0.1, 0.1, 0.1), upper = c(0.8, 0.8, 0.8)), # TODO 0.1 to 0.8
+  makeNumericVectorParam("hidden_dropout_ratios", len = 3L, lower = c(0, 0, 0), upper = c(0.8, 0.8, 0.8)), # TODO 0 to 0.8
   # max-norm regularization increases the performance when dropout regularization is used. Typical values lie between 3 and 4 according to Srivastava, N. et al. (2014)
   makeNumericParam("max_w2", lower = 3L, upper = 4L)
 )
 
 # Perform grid search
-rancontrol <- makeTuneControlRandom(maxit = 10L, tune.threshold = FALSE)
+rancontrol <- makeTuneControlRandom(maxit = 50L, tune.threshold = TRUE)
 tuning <- tuneParams(
   learner = makeh2o, 
   resampling = set_cv, 
@@ -100,39 +92,37 @@ tuning <- tuneParams(
   measures = mlr::auc
 )
 
-# Stop parallelization
-# parallelStop()
-
 # View optimal hyperparameters
 tuning$x
 
 # Select best parameters and retrain model on whole training set
 tuned.h2o<-setHyperPars(makeh2o, par.vals = tuning$x)
-modelLib[["h2o"]]<-mlr::train(tuned.h2o, trainTask)
+h2o_model<-mlr::train(tuned.h2o, trainTask)
 
 # Save model
-save(modelLib[["h2o"]], file = "models/h2o_mlr.model")
+save(h2o_model, file = "models/h2o_mlr.model")
 
 # Predict on test set and assess performance based on auc and acc
-# TODO adjust command for optimal threshold
-yhat[["h2o_prob_test"]]<-predict(modelLib[["h2o"]], testTask)
-yhat[["h2o_class_test"]]<-ifelse(yhat[["h2o_prob_test"]]> tuning$x[["tune.threshold"]], 1, 0)
-auc[["h2o_test"]]<-mlr::performance(yhat[["h2o_class_test"]], measures = mlr::auc)
-acc[["h2o_test"]]<-mlr::performance(yhat[["h2o_class_test"]], measures = mlr::acc)
+yhat[["h2o_prob_test"]]<-predict(h2o_model, testTask)
+yhat[["h2o_class_test"]]<-yhat[["h2o_prob_test"]]$data$response
+auc[["h2o_test"]]<-mlr::performance(yhat[["h2o_prob_test"]], measures = mlr::auc)
+auc[["h2o_test"]]
+acc[["h2o_test"]]<-mean(yhat[["h2o_class_test"]] == yhat[["h2o_prob_test"]]$data$truth)
+acc[["h2o_test"]]
 
 # Use tuned model to predict whole known dataset
-yhat[["h2o_known"]]<-predict(modelLib[["h2o"]], newdata = dn)
+yhat[["h2o_known"]]<-predict(h2o_model, newdata = dn)
 
 # Use tuned model to predict whole class dataset
-yhat[["h2o_class"]]<-predict(modelLib[["h2o"]], newdata = classdatan)
+yhat[["h2o_class"]]<-predict(h2o_model, newdata = classdatan)
 
 # Create an object containing order_item_id and predicted probabilities for known dataset
 d.result<-data.frame(df_known$order_item_id, yhat[["h2o_known"]]$data$prob.1)
 names(d.result)<-c("order_item_id", "return")
 
 # Assess total accuracy on known dataset 
-# TODO adjust command for optimal threshold
-acc[["h2o_total"]]<-mean(ifelse(d.result$return > tuning$x[["tune.threshold"]], 1,0) == df_known$return)
+acc[["h2o_total"]]<-mean(ifelse(d.result$return > yhat[["h2o_known"]]$threshold[1], 1,0) == df_known$return)
+acc[["h2o_total"]]
 
 # Create an object containing order_item_id and predicted probabilities for class dataset
 classdata.result = data.frame(df_class$order_item_id, yhat[["h2o_class"]]$data$prob.1)

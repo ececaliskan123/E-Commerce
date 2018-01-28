@@ -1,13 +1,12 @@
-# mlr with h2o, 5 fold CV
+## VIF test for multicollinearity between "return" and "avg_return"
 
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
-if(!require("car")) install.packages("car"); library("car")
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
   dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color, item_price, item_size))
-  # Nicolai added the feature item_price and item_size to the previous line due to low RF variable importance scores
+  # Added the features item_price and item_size to the previous line due to low RF variable importance scores
   dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
   dd$order_month = as.numeric(format(dd$order_date, "%m"))
   dd$order_day   = as.numeric(format(dd$order_date, "%d"))
@@ -24,23 +23,32 @@ amend_features = function(dd){
   } else {
     # dd = createDummyFeatures(dd, cols=c("item_size"))
   }
-  # Nicolai deselected createDummyFeatures due to the deletion of fetures item_size and item_price (see above)
+  # Deselected createDummyFeatures due to the deletion of features item_size and item_price (see above)
   return(dd)
 }
 
-# setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
-#d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
-#classdata = read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
 
-### TODO AMEND BLOCK AFTER FEATURE ENGINEERING
+### Process known dataset
 dn = amend_features(df_known)
 ###############################################
+
+### Assign random target variable
 set.seed(1)
 n = nrow(dn)
 ratio = sum(dn$return)/n
-dn$random_class <- rbinom(n, 1, 0.5)
+dn$random_class <- rbinom(n, 1, ratio)
+table(dn$random_class)
 
-### TODO Robustness check wrt feature "avg_return" with VIF test
-model <- glm (randorm_class ~ ., data = dn, family = binomial)
+### Look at correlation to see whether multicollinearity could be present
+round(cor(dn), 2)
+# As some variables are highly correlated, proceed with VIF test
 
+### Create regression model with random target and all other variables as features
+model <- glm (random_class ~ ., data = dn, family = binomial)
+
+### Calculate VIF
+vif_test <- vif(model)
+print(max(vif_test))
+# No VIF > 10
+## Decision: Keep all variables

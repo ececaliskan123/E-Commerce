@@ -7,13 +7,7 @@ if(!require("tidyverse")) install.packages("tidyverse"); library("tidyverse")
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
-  dd = subset(dd, select = -c(user_dob,
-                              user_maturity,
-                              user_title,
-                              user_state,
-                              item_color,
-                              delivery_date,
-                              item_size))
+  dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color))
   
   dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
   dd$order_month = as.numeric(format(dd$order_date, "%m"))
@@ -27,9 +21,9 @@ amend_features = function(dd){
   
   if("return" %in% colnames(dd)) {
     dd = normalizeFeatures(dd, target="return")
-    #dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
+    dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
   } else {
-    #dd = createDummyFeatures(dd, cols=c("item_size"))
+    dd = createDummyFeatures(dd, cols=c("item_size"))
   }
 
   return(dd)
