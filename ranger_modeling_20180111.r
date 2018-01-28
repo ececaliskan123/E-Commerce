@@ -5,7 +5,7 @@ library(ranger)
 library(dplyr)
 library(caret)
 # From Parameter tuning file
-set.seed(1)
+set.seed(124)
 n <- nrow(df_known) 
 sample.size <- ceiling(n*0.8)
 idx.train <- createDataPartition(y =df_known$return, p = 0.8, list = FALSE) 
@@ -19,10 +19,10 @@ vars <- c("user_id", "order_item_id", "order_date","month_of_delivery", "price_a
 # Create the formula string for returns as a function of the inputs
 fmla <- paste(return, "~", paste(vars, collapse = " + "))
 # Fit and print the random forest model
-# Hyperparameters with 5 folds CV (done by mlr)
+# Hyperparameters with 5 folds CV
 (df_known_rfmodel_CV <- ranger(fmla, # formula
                            tr,  #data
-                           num.trees = 500,
+                           num.trees = 800,
                            mtry = 6,
                            num.threads = 1,
                            verbose = FALSE,
@@ -39,15 +39,13 @@ ggplot(ts, aes(x = pred, y = return)) +
   stat_smooth(method = 'glm', method.args = list(family = 'binomial'), se = FALSE) # Smoothed curve w/o standard errors
 #Prediction for df_known
 df_known$pred <- predict(df_known_rfmodel_CV, df_known)$predictions
-a <- which(is.na(df_known$delivery_date))
-df_known$pred[a] <- 0 
 df_known1 <- subset(df_known, select = c(order_item_id, pred))
 csv <- write_csv(df_known1, 'randomforest_known.csv')
 
 # Saving optimal rf model
 saveRDS(df_known_rfmodel_CV, file = "models/RF_Model_Par.R") 
 
-# Accuracy : 0.9256
+# Accuracy : 0.9256  
 prob.pred_known  = as.vector(df_known$pred)
 class.pred_known  = ifelse(prob.pred_known > 0.5, "1", "0")
 confusionMatrix(data = class.pred_known, reference = df_known$return, positive = "1")
@@ -58,8 +56,6 @@ confusionMatrix(data = class.pred_known, reference = df_known$return, positive =
 #### Prediction
 library(readr)
 df_class$pred <- predict(df_known_rfmodel_CV, df_class)$predictions
-b <- which(is.na(df_class$delivery_date))
-df_class$pred[b] <- 0 
 df_class$pred_return <- with(df_class, ifelse(pred < 0.5, 0, 1))
 table(df_class$pred_return)
 
@@ -115,7 +111,7 @@ source('load_data.R')
 retail2 = amend_features(df_known)
 
 # Splitting the data into a test and a training set 
-set.seed(1)
+set.seed(124)
 n <- nrow(retail2) 
 sample.size <- ceiling(n*0.8)
 idx.train <- createDataPartition(y =retail2$return, p = 0.8, list = FALSE) 
@@ -172,8 +168,7 @@ yhat[["rf"]] <- predict(modelLib[["rf"]], newdata = ts1)
 str(yhat[["rf"]])
 # Calculate AUC performance on test set 
 auc[["rf"]] <- mlr::performance(yhat[["rf"]], measures = mlr::auc)
-auc[["rf"]] #0.91037 
-
+auc[["rf"]] #0.9118319 
 
 
 
