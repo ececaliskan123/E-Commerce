@@ -2,7 +2,6 @@
 
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
-if(!require("car")) install.packages("car"); library("car")
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
