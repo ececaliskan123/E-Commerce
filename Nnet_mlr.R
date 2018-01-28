@@ -93,31 +93,33 @@ tuning$x
 
 # Select best parameters and retrain model on whole training set
 tuned.nnet<-setHyperPars(makeannet, par.vals = tuning$x)
-modelLib[["nnet"]]<-mlr::train(tuned.nnet, trainTask)
+nnet_model<-mlr::train(tuned.nnet, trainTask)
 
 # Save model
-save(modelLib[["nnet"]], file = "models/nnet_mlr.model")
+save(nnet_model, file = "models/nnet_mlr.model")
+yhat[["nnet_prob_test"]]$data$truth
 
 # Predict on test set and assess performance based on auc and acc
-# TODO adjust command for optimal threshold
-yhat[["nnet_prob_test"]]<-predict(modelLib[["nnet"]], testTask)
-yhat[["nnet_class_test"]]<-ifelse(yhat[["nnet_prob_test"]]> tuning$x[["tune.threshold"]], 1, 0)
-auc[["nnet_test"]]<-mlr::performance(yhat[["nnet_class_test"]], measures = mlr::auc)
-acc[["nnet_test"]]<-mlr::performance(yhat[["nnet_class_test"]], measures = mlr::acc)
+yhat[["nnet_prob_test"]]<-predict(nnet_model, testTask)
+yhat[["nnet_class_test"]]<-yhat[["nnet_prob_test"]]$data$response
+auc[["nnet_test"]]<-mlr::performance(yhat[["nnet_prob_test"]], measures = mlr::auc)
+auc[["nnet_test"]]
+acc[["nnet_test"]]<-mean(yhat[["nnet_class_test"]] == yhat[["nnet_prob_test"]]$data$truth)
+acc[["nnet_test"]]
 
 # Use tuned model to predict whole known dataset
-yhat[["nnet_known"]]<-predict(modelLib[["nnet"]], newdata = dn)
+yhat[["nnet_known"]]<-predict(nnet_model, newdata = dn)
 
 # Use tuned model to predict whole class dataset
-yhat[["nnet_class"]]<-predict(modelLib[["nnet"]], newdata = classdatan)
+yhat[["nnet_class"]]<-predict(nnet_model, newdata = classdatan)
 
 # Create an object containing order_item_id and predicted probabilities for known dataset
 d.result<-data.frame(df_known$order_item_id, yhat[["nnet_known"]]$data$prob.1)
 names(d.result)<-c("order_item_id", "return")
 
 # Assess total accuracy on known dataset 
-# TODO adjust command for optimal threshold
-acc[["nnet_total"]]<-mean(ifelse(d.result$return > tuning$x[["tune.threshold"]], 1,0) == df_known$return)
+acc[["nnet_total"]]<-mean(ifelse(d.result$return > 0.5, 1, 0) == df_known$return)
+acc[["nnet_total"]]
 
 # Create an object containing order_item_id and predicted probabilities for class dataset
 classdata.result = data.frame(df_class$order_item_id, yhat[["nnet_class"]]$data$prob.1)
