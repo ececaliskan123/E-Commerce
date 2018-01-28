@@ -3,14 +3,13 @@
 if(!require("nnet")) install.packages("nnet"); library("nnet")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMap")
-if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
+# if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
-
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
-  dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color))
-  
+  dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color, item_price, item_size))
+# Nicolai added the feature item_price and item_size to the previous line due to low RF variable importance scores
   dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
   dd$order_month = as.numeric(format(dd$order_date, "%m"))
   dd$order_day   = as.numeric(format(dd$order_date, "%d"))
@@ -23,15 +22,14 @@ amend_features = function(dd){
   
   if("return" %in% colnames(dd)) {
     dd = normalizeFeatures(dd, target="return")
-    dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
+    # dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
   } else {
-    dd = createDummyFeatures(dd, cols=c("item_size"))
+    # dd = createDummyFeatures(dd, cols=c("item_size"))
   }
-
+# Nicolai deselected createDummyFeatures due to the deletion of fetures item_size and item_price (see above)
   return(dd)
 }
 
-# TODO WHAT THE F IS HAPPENING HERE? Error in data.table(sales) : could not find function "data.table"
 # setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 #d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
@@ -63,22 +61,22 @@ auc <- list()
 acc <- list()
 
 # Activate parallel computing with all cores
-parallelStartSocket(parallel::detectCores()-1)
+parallelStartSocket(parallel::detectCores())
 
 # Choose 5 fold CV with stratified sampling
-set_cv <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
+set_cv <- makeResampleDesc("CV", iters = 5L, stratify = TRUE)
 
 # Hyperparamter tuning
 # TODO implement final parameter ranges
 getParamSet("classif.nnet")
 rs <- makeParamSet(
-  makeIntegerParam("size", lower = 3L, upper = 200L),
+  makeIntegerParam("size", lower = 3L, upper = 30L),
   makeDiscreteParam("MaxNWts", values = 10000),
-  makeDiscreteParam("maxit", values = 200),
-  makeNumericParam("decay", lower = 1e-08, upper = 1e-02)
+  makeDiscreteParam("maxit", values = 50),
+  makeNumericParam("decay", lower = 1e-06, upper = 1e-01)
 )
 # Perform grid search
-rscontrol <- makeTuneControlRandom(maxit = 100L, tune.threshold = TRUE)
+rscontrol <- makeTuneControlRandom(maxit = 50L, tune.threshold = TRUE)
 tuning <- tuneParams(
   learner = makeannet, 
   resampling = set_cv, 
