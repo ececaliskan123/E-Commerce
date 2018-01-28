@@ -1,3 +1,5 @@
+library(data.table)
+
 standardize <- function(x){
   mu <- mean(x)
   std <- sd(x)
