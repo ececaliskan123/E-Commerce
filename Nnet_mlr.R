@@ -51,8 +51,6 @@ testTask <- makeClassifTask(data = ts, target = "return", positive = "1")
 # Learner
 makeannet <- makeLearner("classif.nnet", predict.type="prob")
 # Set up a structure to save the expected results
-# A number of models
-modelLib <- list()
 # Test set predictions
 yhat <- list()
 # AUC performance for each model
@@ -63,7 +61,7 @@ acc <- list()
 # Activate parallel computing with all cores
 parallelStartSocket(parallel::detectCores())
 
-# Choose 5 fold CV with stratified sampling
+# # Choose 5 fold CV with stratified sampling (no significant performance loss compared with 10 fold CV or 632 bootstrapping)
 set_cv <- makeResampleDesc("CV", iters = 5L, stratify = TRUE)
 
 # Hyperparamter tuning
