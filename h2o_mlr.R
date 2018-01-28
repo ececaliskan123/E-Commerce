@@ -30,7 +30,6 @@ amend_features = function(dd){
   return(dd)
 }
 
-# TODO WHAT THE F IS HAPPENING HERE? Error in data.table(sales) : could not find function "data.table"
 # setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 #d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
@@ -62,7 +61,7 @@ auc <- list()
 acc <- list()
 
 # TODO Activate parallel computing with all cores
-parallelStartSocket(parallel::detectCores()-1)
+# parallelStartSocket(parallel::detectCores()-1)
 
 # Choose 5 fold CV with stratified sampling
 set_cv <- makeResampleDesc("CV", iters = 5L, stratify = TRUE)
@@ -88,7 +87,7 @@ rs <- makeParamSet(
 )
 
 # Perform grid search
-rancontrol <- makeTuneControlRandom(maxit = 100L, tune.threshold = TRUE)
+rancontrol <- makeTuneControlRandom(maxit = 1L, tune.threshold = TRUE)
 tuning <- tuneParams(
   learner = makeh2o, 
   resampling = set_cv, 
@@ -99,7 +98,7 @@ tuning <- tuneParams(
 )
 
 # Stop parallelization
-parallelStop()
+# parallelStop()
 
 # View optimal hyperparameters
 tuning$x
