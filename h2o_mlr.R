@@ -8,8 +8,8 @@ if(!require("data.table")) install.packages("data.table"); library("data.table")
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
-  dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color))
-  
+  dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color, item_price, item_size))
+  # Nicolai added the feature item_price and item_size to the previous line due to low RF variable importance scores
   dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
   dd$order_month = as.numeric(format(dd$order_date, "%m"))
   dd$order_day   = as.numeric(format(dd$order_date, "%d"))
@@ -20,17 +20,19 @@ amend_features = function(dd){
   dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
   dd           = subset(dd, select=-user_reg_date)
   
+  dd$return = as.factor(dd$return)
+  # Nicolai added the previous line for h2o
+  
   if("return" %in% colnames(dd)) {
     dd = normalizeFeatures(dd, target="return")
-    dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
+    # dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
   } else {
-    dd = createDummyFeatures(dd, cols=c("item_size"))
+    # dd = createDummyFeatures(dd, cols=c("item_size"))
   }
-  
+  # Nicolai deselected createDummyFeatures due to the deletion of fetures item_size and item_price (see above)
   return(dd)
 }
 
-# TODO WHAT THE F IS HAPPENING HERE? Error in data.table(sales) : could not find function "data.table"
 # setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
 #d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
@@ -50,7 +52,7 @@ ts = dn[-idx.train, ]
 trainTask <- makeClassifTask(data = tr, target = "return", positive = "1")
 testTask <- makeClassifTask(data = ts, target = "return", positive = "1")
 # Learner
-makeh2o <- makeLearner("classif.h2o.deeplearning", predict.type="prob")
+makeh2o <- makeLearner("classif.h2o.deeplearning", predict.type="response")
 # Set up a structure to save the expected results
 # A number of models
 modelLib <- list()
@@ -62,7 +64,7 @@ auc <- list()
 acc <- list()
 
 # TODO Activate parallel computing with all cores
-parallelStartSocket(parallel::detectCores()-1)
+# parallelStartSocket(parallel::detectCores()-1)
 
 # Choose 5 fold CV with stratified sampling
 set_cv <- makeResampleDesc("CV", iters = 5L, stratify = TRUE)
@@ -88,7 +90,7 @@ rs <- makeParamSet(
 )
 
 # Perform grid search
-rancontrol <- makeTuneControlRandom(maxit = 100L, tune.threshold = TRUE)
+rancontrol <- makeTuneControlRandom(maxit = 10L, tune.threshold = FALSE)
 tuning <- tuneParams(
   learner = makeh2o, 
   resampling = set_cv, 
@@ -99,7 +101,7 @@ tuning <- tuneParams(
 )
 
 # Stop parallelization
-parallelStop()
+# parallelStop()
 
 # View optimal hyperparameters
 tuning$x
