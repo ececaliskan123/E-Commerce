@@ -46,7 +46,7 @@ df_known$cost_rf[b] <- 0.5*(df_known$item_price[b])
 
 # Sum of the cost
 rf_cost_sum <- sum(df_known$cost_rf)
-rf_cost_sum #243,997.7
+rf_cost_sum #244,189.7
 
 ### NN cost
 df_known$pred_nn_prob <- nnet_known$return
