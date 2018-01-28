@@ -5,7 +5,7 @@ library(ranger)
 library(dplyr)
 library(caret)
 # From Parameter tuning file
-set.seed(124)
+set.seed(1)
 n <- nrow(df_known) 
 sample.size <- ceiling(n*0.8)
 idx.train <- createDataPartition(y =df_known$return, p = 0.8, list = FALSE) 
@@ -19,10 +19,10 @@ vars <- c("user_id", "order_item_id", "order_date","month_of_delivery", "price_a
 # Create the formula string for returns as a function of the inputs
 fmla <- paste(return, "~", paste(vars, collapse = " + "))
 # Fit and print the random forest model
-# Hyperparameters with 5 folds CV
+# Hyperparameters with 5 folds CV (done by mlr)
 (df_known_rfmodel_CV <- ranger(fmla, # formula
                            tr,  #data
-                           num.trees = 800,
+                           num.trees = 500,
                            mtry = 6,
                            num.threads = 1,
                            verbose = FALSE,
@@ -47,7 +47,7 @@ csv <- write_csv(df_known1, 'randomforest_known.csv')
 # Saving optimal rf model
 saveRDS(df_known_rfmodel_CV, file = "models/RF_Model_Par.R") 
 
-# Accuracy : 0.9258
+# Accuracy : 0.9256
 prob.pred_known  = as.vector(df_known$pred)
 class.pred_known  = ifelse(prob.pred_known > 0.5, "1", "0")
 confusionMatrix(data = class.pred_known, reference = df_known$return, positive = "1")
@@ -115,7 +115,7 @@ source('load_data.R')
 retail2 = amend_features(df_known)
 
 # Splitting the data into a test and a training set 
-set.seed(124)
+set.seed(1)
 n <- nrow(retail2) 
 sample.size <- ceiling(n*0.8)
 idx.train <- createDataPartition(y =retail2$return, p = 0.8, list = FALSE) 
@@ -172,7 +172,8 @@ yhat[["rf"]] <- predict(modelLib[["rf"]], newdata = ts1)
 str(yhat[["rf"]])
 # Calculate AUC performance on test set 
 auc[["rf"]] <- mlr::performance(yhat[["rf"]], measures = mlr::auc)
-auc[["rf"]] #0.9118319 
+auc[["rf"]] #0.91037 
+
 
 
 
