@@ -3,7 +3,6 @@
 if(!require("h2o")) install.packages("h2o"); library("h2o")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMap")
-if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
 
 amend_features = function(dd){
