@@ -133,3 +133,4 @@ classdata.result[is.na(df_class$delivery_date), "return"] = 0
 
 write.csv(d.result, "data/h2o_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/h2o_class.csv", row.names = FALSE)
+
