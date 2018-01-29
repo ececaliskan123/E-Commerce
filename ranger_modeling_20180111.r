@@ -5,9 +5,9 @@ library(ranger)
 library(dplyr)
 library(caret)
 # From Parameter tuning file
-set.seed(1)
 n <- nrow(df_known) 
 sample.size <- ceiling(n*0.8)
+set.seed(1)
 idx.train <- createDataPartition(y =df_known$return, p = 0.8, list = FALSE) 
 tr <- df_known[idx.train, ]  # training set
 ts <- df_known[-idx.train, ] # test set 
