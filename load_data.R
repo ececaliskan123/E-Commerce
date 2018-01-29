@@ -8,6 +8,11 @@ standardize <- function(x){
   return(result)
 }
 
+..mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
 ..static_user_statistics <- NULL
 ..read_and_preprocess_data_file = function(fp) {
   sales = read.csv(fp, stringsAsFactors = FALSE)
@@ -128,7 +133,7 @@ standardize <- function(x){
     ..static_user_statistics <<- sales[, list("avg_return" = mean(return)), by = "user_id"]
   }
   sales = data.frame(merge(x = sales, y = ..static_user_statistics, by = "user_id", all.x = TRUE))
-  #sales = sales[ ..static_user_statistics ]
+  sales[is.na(sales$avg_return), "avg_return"] = ..mode(..static_user_statistics$avg_return)
   # commented since the return column does not exist yet
   #sales$return <- factor(sales$return, labels = c("keep","return"))
   return(sales)
