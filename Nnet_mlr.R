@@ -127,4 +127,4 @@ classdata.result[is.na(df_class$delivery_date), "return"] = 0
 
 write.csv(d.result, "data/nnet_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/nnet_class.csv", row.names = FALSE)
-
+#
