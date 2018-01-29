@@ -2,6 +2,7 @@
 
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
+if(!require("car")) install.packages("car"); library("car")
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
@@ -31,24 +32,17 @@ source('load_data.R')
 
 ### Process known dataset
 dn = amend_features(df_known)
-###############################################
-
-### Assign random target variable
-set.seed(1)
-n = nrow(dn)
-ratio = sum(dn$return)/n
-dn$random_class <- rbinom(n, 1, ratio)
-table(dn$random_class)
-
+##############################################
 ### Look at correlation to see whether multicollinearity could be present
 round(cor(dn), 2)
 # As some variables are highly correlated, proceed with VIF test
 
-### Create regression model with random target and all other variables as features
-model <- glm (random_class ~ ., data = dn, family = binomial)
+### Create regression model that follows our specification for prediction to test for multicollinearity
+model <- glm (return ~ ., data = dn, family = binomial)
 
-### Calculate VIF
+### Calculate VIF for model1
 vif_test <- vif(model)
+vif_test
 print(max(vif_test))
 # No VIF > 10
-## Decision: Keep all variables
+## Decision: Keep all variables, no multicollinearity across the features to be used for predictive modeling 
