@@ -1,6 +1,7 @@
 # mlr with neuralnet, 5 fold CV
 
 if(!require("nnet")) install.packages("nnet"); library("nnet")
+if(!require("NeuralNetTools")) install.packages("NeuralNetTools"); library("NeuralNetTools")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMap")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
@@ -128,3 +129,13 @@ classdata.result[is.na(df_class$delivery_date), "return"] = 0
 write.csv(d.result, "data/nnet_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/nnet_class.csv", row.names = FALSE)
 #
+
+## Variable importance
+nnet_weights <- neuralweights(nnet_model$learner.model)
+feature_names <- colnames(subset(tr, select=-return))
+target_name <- colnames(tr["return"])
+olden(mod_in = nnet_weights, y_names = target_name, x_names = feature_names, bar_plot = FALSE)
+
+## TODO check out Johannes code for pdps
+PDP_avg_return<-generatePartialDependenceData(nnet_model, trainTask, "avg_return")
+plot(x = PDP_avg_return$data$avg_return, y = PDP_avg_return$data$Probability)
