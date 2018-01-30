@@ -69,25 +69,16 @@ for (part in seq(0.05,0.8,0.05)) {
       verbose = T
     )
   )
-  #cv.ranger = crossval(learner = ranger_learner,
-   #                    task = train_task,
-    #                   iters = 5,
-     #                  stratify = TRUE,
-      #                 measures = acc,
-       #                show.info = T)
-  #ranger_model = mlr::train(ranger_learner, train_task)
-  trc = trainControl(method="cv",number=5)
-  ranger_model = caret::train(fmla,
-                       data=tr,
-                       method="ranger",
-                       trControl=trc,
-                       num.trees=600,
-                       tuneGrid = data.frame(.mtry = 6,
-                                             .splitrule = "gini",
-                                             .min.node.size = 10))
+  cv.ranger = crossval(learner = ranger_learner,
+                       task = train_task,
+                       iters = 5,
+                       stratify = TRUE,
+                       measures = acc,
+                       show.info = T)
+  ranger_model = mlr::train(ranger_learner, train_task)
   
-  ts$pred <- predict(ranger_model, newdata=ts)
-  tr$pred <- predict(ranger_model, newdata=tr)
+  ts$pred <- predict(ranger_model, newdata=ts)$data$response
+  tr$pred <- predict(ranger_model, newdata=tr)$data$response
   results =  data.frame(part, mean(ts$pred == ts$return), mean(tr$pred == tr$return))
   colnames(results) = rn
   test.results = rbind(test.results,results)
