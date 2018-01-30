@@ -5,6 +5,7 @@ if(!require("NeuralNetTools")) install.packages("NeuralNetTools"); library("Neur
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMap")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
+if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
 
 amend_features = function(dd){
   dd = subset(dd, select = -c(delivery_date))
@@ -128,16 +129,20 @@ classdata.result[is.na(df_class$delivery_date), "return"] = 0
 
 write.csv(d.result, "data/nnet_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/nnet_class.csv", row.names = FALSE)
-#
 
 ## Variable importance
 nnet_weights  <- neuralweights(nnet_model$learner.model)$wts
 feature_names <- nnet_model$features
 target_name   <- "return"
-olden.default(mod_in = nnet_weights,
+h2o_imp <- olden(mod_in = nnet_weights,
               y_names = target_name,
               x_names = feature_names,
               bar_plot = FALSE)
+
+h2o_imp_plot <- olden(mod_in = nnet_weights,
+                      y_names = target_name,
+                      x_names = feature_names,
+                      bar_plot = TRUE)
 
 ## TODO check out Johannes code for pdps
 PDP_avg_return<-generatePartialDependenceData(nnet_model, trainTask, "avg_return")
