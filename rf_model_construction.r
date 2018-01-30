@@ -90,7 +90,7 @@ write.csv(d.result, "data/rf_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/rf_class.csv", row.names = FALSE)
 
 if (FALSE) {
-  importance = h2o.varimp(rf_mode$learner.model)
-  pd.xgboost = generatePartialDependenceData(xgb_model, trainTask, "item_price")
-  plotPartialDependence(pd.xgboost)
+  importance = h2o.varimp(rf_model$learner.model$next.model$learner.model)
+  #pd.xgboost = generatePartialDependenceData(xgb_model, trainTask, "item_price")
+  #plotPartialDependence(pd.xgboost)
 }
