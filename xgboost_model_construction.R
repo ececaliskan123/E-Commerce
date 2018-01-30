@@ -6,7 +6,6 @@ if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("tidyverse")) install.packages("tidyverse"); library("tidyverse")
 
 amend_features = function(dd){
-  dd = subset(dd, select = -c(delivery_date))
   dd = subset(dd, select = -c(user_dob,
                               user_maturity,
                               user_title,
@@ -26,7 +25,7 @@ amend_features = function(dd){
   dd           = subset(dd, select=-user_reg_date)
   
   if("return" %in% colnames(dd)) {
-    dd = normalizeFeatures(dd, target="return")
+    dd = mlr::normalizeFeatures(dd, target="return")
     #dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
   } else {
     #dd = createDummyFeatures(dd, cols=c("item_size"))
@@ -45,7 +44,6 @@ dn = amend_features(df_known)
 classdatan = amend_features(df_class)
 ###############################################
 set.seed(1)
-
 idx.train = caret::createDataPartition(y = dn$return, p = 0.8, list = FALSE) 
 tr = dn[idx.train, ]
 ts = dn[-idx.train, ]
@@ -84,7 +82,7 @@ xgb_learner = makeLearner(
   )
 )
 
-control = makeTuneControlRandom(maxit = 50)
+control = makeTuneControlRandom(maxit = 40)
 resample_desc = makeResampleDesc("CV", iters = 5)
 
 tuned_params = tuneParams(
@@ -106,10 +104,10 @@ xgb_model = mlr::train(xgb_tuned_learner, trainTask)
 predicted_classes = predict(xgb_model, newdata = dn)
 predicted_class   = predict(xgb_model, newdata = classdatan)
 
-d.result = data.frame(df_known$order_item_id, predicted_classes$data$prob.1)
+d.result        = data.frame(df_known$order_item_id, predicted_classes$data$prob.1)
 names(d.result) = c("order_item_id", "return")
-accuracy = mean(predicted_classes$data[-idx.train,]$response == ts$return)
-total_accuracy = mean(ifelse(d.result$return > 0.5, 1,0) == df_known$return)
+ts_accuracy     = mean(ifelse(d.result[-idx.train,"return"] > 0.5, 1,0) == ts$return)
+tr_accuracy     = mean(ifelse(d.result[idx.train, "return"] > 0.5, 1,0) == df_known[idx.train,"return"])
 
 classdata.result = data.frame(df_class$order_item_id, predicted_class$data$prob.1)
 names(classdata.result) = c("order_item_id", "return")
