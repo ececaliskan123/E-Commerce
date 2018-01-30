@@ -131,10 +131,13 @@ write.csv(classdata.result, "data/nnet_class.csv", row.names = FALSE)
 #
 
 ## Variable importance
-nnet_weights <- neuralweights(nnet_model$learner.model)
-feature_names <- colnames(subset(tr, select=-return))
-target_name <- colnames(tr["return"])
-olden(mod_in = nnet_weights, y_names = target_name, x_names = feature_names, bar_plot = FALSE)
+nnet_weights  <- neuralweights(nnet_model$learner.model)$wts
+feature_names <- nnet_model$features
+target_name   <- "return"
+olden.default(mod_in = nnet_weights,
+              y_names = target_name,
+              x_names = feature_names,
+              bar_plot = FALSE)
 
 ## TODO check out Johannes code for pdps
 PDP_avg_return<-generatePartialDependenceData(nnet_model, trainTask, "avg_return")
