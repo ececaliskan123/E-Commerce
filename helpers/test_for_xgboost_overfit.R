@@ -57,13 +57,13 @@ for (part in seq(0.05,0.8,0.05)) {
       base_score = mean(tr$return)
     )
   )
-  #cv.ranger = crossval(learner = xgb_learner,
-  #                    task = train_task,
-  #                   iters = 5,
-  #                  stratify = TRUE,
-  #                 measures = acc,
-  #                show.info = T)
-  txgb_model = mlr::train(ranger_learner, train_task)
+  cv.ranger = crossval(learner = xgb_learner,
+                       task = train_task,
+                       iters = 5,
+                       stratify = TRUE,
+                       measures = acc,
+                       show.info = T)
+  txgb_model = mlr::train(xgb_learner, train_task)
   
   ts$pred <- ifelse(predict(txgb_model, newdata=ts)$data$prob.1 > 0.5,1,0)
   tr$pred <- ifelse(predict(txgb_model, newdata=tr)$data$prob.1 > 0.5,1,0)
