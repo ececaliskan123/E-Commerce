@@ -82,7 +82,7 @@ xgb_learner = makeLearner(
   )
 )
 
-control = makeTuneControlRandom(maxit = 50)
+control = makeTuneControlRandom(maxit = 40)
 resample_desc = makeResampleDesc("CV", iters = 5)
 
 tuned_params = tuneParams(
