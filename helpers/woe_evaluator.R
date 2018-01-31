@@ -1,4 +1,7 @@
-library(data.table)
+if(!require("data.table")) install.packages("data.table"); library("data.table")
+if(!require("klaR")) install.packages("klaR"); library("klaR")
+if(!require("mlr")) install.packages("mlr"); library("mlr")
+
 
 ..standardize <- function(x){
   mu <- mean(x)
@@ -122,22 +125,80 @@ library(data.table)
   if ("return" %in% colnames(sales)) {
     ..static_user_statistics <<- sales[, list("avg_return" = mean(return), "nr_obs" = .N), by = "user_id"]
   } else {
-    df2 = ..static_user_statistics
+    avgrets = subset(..static_user_statistics, select = -c(nr_obs))
+    df2 = subset(..static_user_statistics, select=-c(avg_return))
     df1 = sales[, list("nr_obs" = .N), by = "user_id"]
-    df1$avg_return = 0
-
     
     # bind the two dataframes together by row and aggregate
-    ..static_user_statistics <<- aggregate(cbind(avg_return, nr_obs) ~ user_id, rbind(df1,df2), sum)
+    ..static_user_statistics <<- aggregate(cbind(nr_obs) ~ user_id, rbind(df1,df2), sum)
     # or (thx to @alistaire for reminding me):
-    ..static_user_statistics <<- aggregate(. ~ user_id, rbind(df1,df2), sum)
+    #..static_user_statistics <<- aggregate(. ~ user_id, rbind(df1,df2), sum)
+    ..static_user_statistics = data.frame(merge(x = ..static_user_statistics, y = avgrets, by = "user_id", all.x = TRUE))
   }
+  
   sales = data.frame(merge(x = sales, y = ..static_user_statistics, by = "user_id", all.x = TRUE))
   sales[is.na(sales$avg_return), "avg_return"] = ..mode(..static_user_statistics$avg_return)
-  # commented since the return column does not exist yet
-  #sales$return <- factor(sales$return, labels = c("keep","return"))
+
   return(sales)
 }
 
+amend_features = function(dd){
+  dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
+  dd$order_month = as.numeric(format(dd$order_date, "%m"))
+  dd$order_day   = as.numeric(format(dd$order_date, "%d"))
+  dd             = subset(dd, select=-order_date)
+  
+  dd$reg_year  = as.numeric(format(dd$user_reg_date, "%Y"))
+  dd$reg_month = as.numeric(format(dd$user_reg_date, "%m"))
+  dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
+  dd           = subset(dd, select=-user_reg_date)
+  
+  dd$del_year  = as.numeric(format(dd$delivery_date, "%Y"))
+  dd$del_month = as.numeric(format(dd$delivery_date, "%m"))
+  dd$del_day   = as.numeric(format(dd$delivery_date, "%d"))
+  dd           = subset(dd, select=-delivery_date)
+  dd$return    = as.factor(dd$return)
+  
+  if("return" %in% colnames(dd)) {
+    dd = normalizeFeatures(dd, target="return")
+  }
+  
+  return(dd)
+}
+
 df_known = ..read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
-df_class = ..read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
+df_known$return = factor(df_known$return)
+
+woe.object <- woe(return ~ item_size + item_color + user_title + user_state,
+                  data = df_known,
+                  zeroadj = 0.5)
+
+df_known$user_state = woe.object$woe$user_state[df_known$user_state]
+df_known$user_title = woe.object$woe$user_title[df_known$user_title]
+df_known$item_size  = woe.object$woe$item_size[df_known$item_size]
+df_known$item_color = woe.object$woe$item_color[df_known$item_color]
+
+df_known = amend_features(df_known)
+
+localH2O = h2o.init(ip='localhost',
+                    nthreads=-1,
+                    min_mem_size='4G',
+                    max_mem_size='5G') # with system memory of 8GB
+train_task = makeClassifTask(data = df_known, target = "return", positive = 1)
+rf_learner = makeLearner(
+  "classif.h2o.randomForest",
+  predict.type = "prob",
+  par.vals = list(
+    ntrees   = 241,
+    mtries   = 8,
+    min_rows = 47
+  )
+)
+cv.ranger = crossval(learner   = rf_learner,
+                     task      = train_task,
+                     iters     = 5,
+                     stratify  = TRUE,
+                     measures  = acc,
+                     show.info = T)
+rf_model = mlr::train(rf_learner, train_task)
+importance = h2o.varimp(rf_model$learner.model)
