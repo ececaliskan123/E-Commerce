@@ -46,12 +46,12 @@ localH2O = h2o.init(ip='localhost',
 ##
 rf_params = makeParamSet(
   makeIntegerParam("ntrees", lower = 50, upper = 500),
-  makeIntegerParam("mtries", lower=7, upper=9),
-  makeIntegerParam("min_rows", lower=2, upper=20)
+  makeIntegerParam("mtries", lower=7, upper=10),
+  makeIntegerParam("min_rows", lower=10, upper=200)
 )
 
 train_task  = makeClassifTask(data = tr, target = "return", positive = 1)
-rf_control = makeTuneControlRandom(maxit = 5)
+rf_control = makeTuneControlRandom(maxit = 40)
 rs_desc    = makeResampleDesc("CV", iters = 5)
 
 rf_learner = makeLearner(
