@@ -87,7 +87,7 @@ df_known$cost_xg[f] <- 0.5*(df_known$item_price[f])
 
 # Sum of the cost
 xg_cost_sum <- sum(df_known$cost_xg)
-xg_cost_sum #508,233.6
+xg_cost_sum #529,106.9
 
 ### h2o cost
 df_known$pred_h2o_prob <- h2o_known$return
@@ -141,8 +141,16 @@ ts$cost_rf[b] <- 0.5*(ts$item_price[b])
 rf_cost_sum <- sum(ts$cost_rf)
 rf_cost_sum #111,215.3
 
+### xgboost cost
+# Calculation the cost for cost matrix
+e <- which(ts$missclassification_xg == 1)
+ts$cost_xg[e] <- 0.5*5*{3+(0.1*ts$item_price[e])} 
+f <- which(ts$missclassification_xg == -1)
+ts$cost_xg[f] <- 0.5*(ts$item_price[f]) 
 
-
+# Sum of the cost
+xg_cost_sum <- sum(ts$cost_xg)
+xg_cost_sum #111,189.4
 
 
 
