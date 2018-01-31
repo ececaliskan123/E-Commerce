@@ -41,11 +41,13 @@ test.results <- data.frame(matrix(ncol = 3, nrow = 0))
 rn <- c("tr_size", "ts_acc", "tr_acc")
 colnames(test.results) = rn
 
+localH2O = h2o.init(ip='localhost',
+                    nthreads=-1,
+                    min_mem_size='4G',
+                    max_mem_size='5G') # with system memory of 8GB
+
 for (part in seq(0.05,0.8,0.05)) {
-  localH2O = h2o.init(ip='localhost',
-                      nthreads=-1,
-                      min_mem_size='4G',
-                      max_mem_size='5G') # with system memory of 8GB
+
   
   set.seed(1)
   idx.train <- createDataPartition(y=df_known$return, p=part, list = FALSE) 
@@ -57,22 +59,21 @@ for (part in seq(0.05,0.8,0.05)) {
   ts = amend_features(ts)
   
   train_task  = makeClassifTask(data = tr, target = "return", positive = 1)
-  rf_control = makeTuneControlRandom(maxit = 5)
-  rs_desc    = makeResampleDesc("CV", iters = 5)
-  
   rf_learner = makeLearner(
     "classif.h2o.randomForest",
     predict.type = "prob",
     par.vals = list(
-      ntrees   = 324, # values taken from hyperparameter tuning
-      mtries   = 7,
-      min_rows = 19
+      ntrees   = 241, # values taken from hyperparameter tuning
+      mtries   = 8,
+      min_rows = 47
     )
   )
-  rf_learner=makeTuneWrapper(learner    = rf_learner,
-                             resampling = rs_desc,
-                             par.set    = rf_params,
-                             control    = rf_control)
+  cv.ranger = crossval(learner   = rf_learner,
+                       task      = train_task,
+                       iters     = 5,
+                       stratify  = TRUE,
+                       measures  = acc,
+                       show.info = T)
   rf_model = mlr::train(rf_learner, train_task)
   
   ts$pred <- predict(rf_model, newdata=ts)$data$response
@@ -80,8 +81,6 @@ for (part in seq(0.05,0.8,0.05)) {
   results =  data.frame(part*n, mean(ts$pred == ts$return), mean(tr$pred == tr$return))
   colnames(results) = rn
   test.results = rbind(test.results,results)
-  
-  h2o.shutdown(prompt = F)
 }
 
 ggplot(test.results, aes(tr_size)) +                    # basic graphical object
