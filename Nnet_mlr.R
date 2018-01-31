@@ -1,43 +1,18 @@
-# mlr with neuralnet, 5 fold CV
+### mlr with neuralnet, 5 fold CV
 
+# load required packages
 if(!require("nnet")) install.packages("nnet"); library("nnet")
 if(!require("NeuralNetTools")) install.packages("NeuralNetTools"); library("NeuralNetTools")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
+if(!require("pdp")) install.packages("pdp"); library("pdp")
 if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMap")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
 if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
-
-amend_features = function(dd){
-  dd = subset(dd, select = -c(delivery_date))
-  dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color, item_price, item_size))
-  # Added the feature item_price and item_size to the previous line due to low RF variable importance scores
-  
-  dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
-  dd$order_month = as.numeric(format(dd$order_date, "%m"))
-  dd$order_day   = as.numeric(format(dd$order_date, "%d"))
-  dd             = subset(dd, select=-order_date)
-  
-  dd$reg_year  = as.numeric(format(dd$user_reg_date, "%Y"))
-  dd$reg_month = as.numeric(format(dd$user_reg_date, "%m"))
-  dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
-  dd           = subset(dd, select=-user_reg_date)
-  
-  if("return" %in% colnames(dd)) {
-    dd = normalizeFeatures(dd, target="return")
-    # dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
-  } else {
-    # dd = createDummyFeatures(dd, cols=c("item_size"))
-  }
-
-  return(dd)
-}
-
-# setwd("/mnt/learning/business-analytics-data-science/groupwork/")
+# load helper to preprocess data and select fetures
+source('helpers/amend_features.R')
+# load data
 source('load_data.R')
-#d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
-#classdata = read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
 
-### TODO AMEND BLOCK AFTER FEATURE ENGINEERING
 dn = amend_features(df_known)
 classdatan = amend_features(df_class)
 ###############################################
@@ -130,20 +105,41 @@ classdata.result[is.na(df_class$delivery_date), "return"] = 0
 write.csv(d.result, "data/nnet_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/nnet_class.csv", row.names = FALSE)
 
-## Variable importance
+## Variable importance using the olden method
 nnet_weights  <- neuralweights(nnet_model$learner.model)$wts
 feature_names <- nnet_model$features
 target_name   <- "return"
-h2o_imp <- olden(mod_in = nnet_weights,
+nnet_imp_df <- olden(mod_in = nnet_weights,
               y_names = target_name,
               x_names = feature_names,
               bar_plot = FALSE)
+save(nnet_imp_df, file = "data/nnet_imp_df")
 
-h2o_imp_plot <- olden(mod_in = nnet_weights,
+nnet_imp_plot <- olden(mod_in = nnet_weights,
                       y_names = target_name,
                       x_names = feature_names,
                       bar_plot = TRUE)
+save(nnet_imp_plot, file = "data/nnet_imp_plot")
 
-## TODO check out Johannes code for pdps
-PDP_avg_return<-generatePartialDependenceData(nnet_model, trainTask, "avg_return")
-plot(x = PDP_avg_return$data$avg_return, y = PDP_avg_return$data$Probability)
+## Calculate and plot PDPs for all variables
+# PDP_avg_return<-generatePartialDependenceData(nnet_model, trainTask, "avg_return")
+# plot(x = PDP_avg_return$data$avg_return, y = PDP_avg_return$data$Probability)
+
+partialPlots <- list()
+# For each of the variables, calculate the partial dependence object for further use
+for (var in names(feature_names)) {
+  message("Now calculating for variable ", var)
+  partialPlots[[var]][["nnet"]] <- do.call(partial, 
+                                                list(nnet_model$learner.model, 
+                                                train = trainTask$env$data, 
+                                                pred.var = var, 
+                                                which.class = 1, 
+                                                type = "classification", 
+                                                plot = FALSE, prob = TRUE))
+  }
+
+par(mfrow=c(17, 1))
+for(var in names(partialPlots)){
+  plot(partialPlots[[var]][["nnet"]], type = "l", xlab = paste(var, " - nnet"), ylab = 'Pred. prob. return', ylim = c(0, 0.5))
+}
+###
