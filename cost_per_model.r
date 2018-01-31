@@ -1,8 +1,9 @@
 source('load_data.R')
 df_known <- subset(df_known, select = c(item_id, item_price, return))
-rf_known <- read.csv('data/randomforest_known.csv')
+rf_known <- read.csv('data/rf_known.csv')
 nnet_known <- read.csv('data/nnet_known.csv')
 xgboost_known <- read.csv('data/xgboost_known.csv')
+h2o_known <- read.csv('data/h2o_known.csv')
 
 ### Randomized return cost 
 n = nrow(df_known)
@@ -29,7 +30,7 @@ randomized_cost_sum #1,473,405
 
 
 ### Random Forest cost
-df_known$pred_rf_prob <- rf_known$pred
+df_known$pred_rf_prob <- rf_known$return
 prob.pred_rf_known  <- as.vector(df_known$pred_rf_prob)
 df_known$pred_rf_prob <- ifelse(prob.pred_rf_known > 0.5, "1", "0")
 
@@ -46,7 +47,7 @@ df_known$cost_rf[b] <- 0.5*(df_known$item_price[b])
 
 # Sum of the cost
 rf_cost_sum <- sum(df_known$cost_rf)
-rf_cost_sum #244,189.7
+rf_cost_sum #512,470.2
 
 ### NN cost
 df_known$pred_nn_prob <- nnet_known$return
@@ -87,6 +88,62 @@ df_known$cost_xg[f] <- 0.5*(df_known$item_price[f])
 # Sum of the cost
 xg_cost_sum <- sum(df_known$cost_xg)
 xg_cost_sum #508,233.6
+
+### h2o cost
+df_known$pred_h2o_prob <- h2o_known$return
+prob.pred_h2o_known  <- as.vector(df_known$pred_h2o_prob)
+df_known$pred_h2o_prob <- ifelse(prob.pred_h2o_known > 0.5, "1", "0")
+
+df_known$pred_h2o_prob <- as.numeric(df_known$pred_h2o_prob)
+
+df_known$missclassification_h2o <- df_known$return - df_known$pred_h2o_prob
+df_known$cost_h2o<- df_known$return - df_known$pred_h2o_prob
+
+# Calculation the cost for cost matrix
+j <- which(df_known$missclassification_h2o == 1)
+df_known$cost_h2o[j] <- 2.5*{3+(0.1*df_known$item_price[j])} 
+k <- which(df_known$missclassification_h2o == -1)
+df_known$cost_h2o[k] <- 0.5*(df_known$item_price[k]) 
+
+# Sum of the cost
+h2o_cost_sum <- sum(df_known$cost_h2o)
+h2o_cost_sum #554,066.8
+
+
+
+###### Splitting the data into a test and a training set 
+set.seed(1)
+n <- nrow(df_known) 
+sample.size <- ceiling(n*0.8)
+idx.train <- createDataPartition(y =df_known$return, p = 0.8, list = FALSE) 
+tr <- df_known[idx.train, ]  # training set
+ts <- df_known[-idx.train, ] # test set 
+
+### Randomized return cost 
+# Calculation the cost for cost matrix
+g <- which(ts$missclassification_randomized == 1)
+ts$cost_randomized[g] <- 0.5*5*{3+(0.1*ts$item_price[g])} 
+h <- which(ts$missclassification_randomized == -1)
+ts$cost_randomized[h] <- 0.5*(ts$item_price[h]) 
+
+# Sum of the cost
+randomized_cost_sum <- sum(ts$cost_randomized)
+randomized_cost_sum #293,445.8
+
+### Random Forest cost
+# Calculation the cost for cost matrix
+a <- which(ts$missclassification_rf == 1)
+ts$cost_rf[a] <- 2.5*{3+(0.1*ts$item_price[a])} 
+b <- which(ts$missclassification_rf == -1)
+ts$cost_rf[b] <- 0.5*(ts$item_price[b]) 
+
+# Sum of the cost
+rf_cost_sum <- sum(ts$cost_rf)
+rf_cost_sum #111,215.3
+
+
+
+
 
 
 
