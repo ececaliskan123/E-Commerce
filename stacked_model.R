@@ -15,7 +15,7 @@ nnet_class = read.csv("data/nnet_class.csv", stringsAsFactors = FALSE)
 h2o_known = read.csv("data/h2o_known.csv", stringsAsFactors = FALSE)
 h2o_class = read.csv("data/h2o_class.csv", stringsAsFactors = FALSE)
 d = read.csv('data/BADS_WS1718_known.csv')
-#c = read.csv('data/BADS_WS1718_class.csv')
+c = read.csv('data/BADS_WS1718_class.csv')
 
 # sort everything first
 xgboost_known = xgboost_known[order(xgboost_known$order_item_id),]
