@@ -140,7 +140,8 @@ for (var in feature_names) {
                                                 plot = FALSE, prob = TRUE))
   }
 
-save(partialPlots, file = "data/h2o_PDPs_df")
+save(partialPlots, file = "data/nnet_PDPs_df")
+partialPlots
 par(mfrow=c(17, 1))
 for(var in names(partialPlots)){
   plot(partialPlots[[var]][["nnet"]], type = "l", xlab = paste(var, " - nnet"), ylab = 'Pred. prob. return', ylim = c(0.1, 0.1), xlim = c(0.1, 0.1))
