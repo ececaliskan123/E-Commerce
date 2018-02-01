@@ -3,44 +3,16 @@ if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("tidyverse")) install.packages("tidyverse"); library("tidyverse")
 if(!require("caret")) install.packages("caret"); library("caret")
 
-amend_features = function(dd){
-  dd = subset(dd, select = -c(delivery_date))
-  dd = subset(dd, select = -c(order_item_id, item_color, item_size))
-  
-  dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
-  dd$order_month = as.numeric(format(dd$order_date, "%m"))
-  dd$order_day   = as.numeric(format(dd$order_date, "%d"))
-  dd             = subset(dd, select=-order_date)
-  
-  dd$reg_year  = as.numeric(format(dd$user_reg_date, "%Y"))
-  dd$reg_month = as.numeric(format(dd$user_reg_date, "%m"))
-  dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
-  dd           = subset(dd, select=-user_reg_date)
-  
-  if ("return" %in% colnames (dd)) {
-    dd = normalizeFeatures(dd, target="return")
-    dd = createDummyFeatures(dd, target="return", cols=c("user_state", "user_title"))
-  } else {
-    dd = createDummyFeatures(dd, cols=c("user_state", "user_title"))
-  }
-  
-  return(dd)
-}
-
 # good arguments agains pure svm approach: https://datascience.stackexchange.com/questions/989/svm-using-scikit-learn-runs-endlessly-and-never-completes-execution
-#setwd("/mnt/learning/business-analytics-data-science/groupwork/")
 source('load_data.R')
-d = read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
-classdata = read_and_preprocess_data_file('data/BADS_WS1718_class.csv')
-
 ### TODO AMEND BLOCK AFTER FEATURE ENGINEERING
-dn = amend_features(d)
-classdatan = amend_features(classdata)
+dn = amend_features(df_known)
+classdatan = amend_features(df_class)
 ###############################################
-dn$return = factor(d$return)
-
+dn[is.na(dn)] = 0
+classdatan[is.na(classdatan)] = 0
+###############################################
 set.seed(1)
-
 idx.train = createDataPartition(y = dn$return, p = 0.8, list = FALSE) 
 tr = dn[idx.train, ]
 ts = dn[-idx.train, ]
@@ -55,10 +27,11 @@ svmLearner = makeLearner(
 )
 
 svmParams = makeParamSet(
-  makeNumericParam("C", lower = -5, upper = 5, trafo = function(x) 2^x)
+  makeNumericParam("C", lower = -10, upper = 10, trafo = function(x) 2^x),
+  makeNumericParam("sigma", lower = -10, upper = 10, trafo = function(x) 2^x)
 )
 
-control = makeTuneControlRandom(maxit = 20)
+control = makeTuneControlRandom(maxit = 40)
 resample_desc = makeResampleDesc("CV", iters = 5)
 
 tuned_params = tuneParams(
@@ -69,13 +42,33 @@ tuned_params = tuneParams(
   control = control
 )
 
-########################################
+# Create a new model using tuned hyperparameters
+svm_tuned_learner = setHyperPars(
+  learner = svmLearner,
+  par.vals = tuned_params$x
+)
 
-predictions = predict(radsvm, newdata = d)
-d.result = data.frame(d$order_item_id, predictions)
+# Re-train parameters using tuned hyperparameters (and full training set)
+svm_model = mlr::train(svm_tuned_learner, trainTask)
+predicted_classes = predict(svm_model, newdata = dn)
+predicted_class   = predict(svm_model, newdata = classdatan)
+
+d.result        = data.frame(df_known$order_item_id, predicted_classes$data$prob.1)
 names(d.result) = c("order_item_id", "return")
+ts_accuracy     = mean(ifelse(d.result[-idx.train,"return"] > 0.5, 1,0) == ts$return)
+tr_accuracy     = mean(ifelse(d.result[idx.train, "return"] > 0.5, 1,0) == tr$return)
 
+classdata.result = data.frame(df_class$order_item_id, predicted_class$data$prob.1)
+names(classdata.result) = c("order_item_id", "return")
 
-save(radsvm, file = "models/svm.model")
-write.csv(d.result, "data/svm_predictions_known.csv", row.names = FALSE)
-write.csv(classdata.result, "data/xgboost_class.csv", row.names = FALSE)
+d.result[is.na(df_known$delivery_date), "return"] = 0
+classdata.result[is.na(df_class$delivery_date), "return"] = 0
+
+save(svm_model, file = "models/svm_mlr.model")
+write.csv(d.result, "data/svm_known.csv", row.names = FALSE)
+write.csv(classdata.result, "data/svm_class.csv", row.names = FALSE)
+
+#importance = svm.importance(feature_names = colnames(tr), model = svm_model$learner.model)
+#s_cols = importance[,c("Gain","Cover","Frequency")]
+#importance = data.frame(importance[,"Feature"], s_cols)
+#write.csv(importance, "data/svm_importance.csv", row.names = F)
