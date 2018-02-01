@@ -7,14 +7,19 @@ h2o_known <- read.csv('data/h2o_known.csv')
 
 ### Randomized return cost 
 n = nrow(df_known)
-ratio = sum(df_known$return) / n
+ratio = sum(df_known$return == 1) / n
 
 set.seed(1)
 accuracy = 100000
 randomized_returns = sample(accuracy, n, replace=TRUE)/accuracy
 randomized_returns = ifelse(randomized_returns > ratio, 1, 0)
 
-df_known$randomized_return <- randomized_returns
+df_known$return <- as.vector(df_known$return)
+df_known$return <- as.numeric(df_known$return)
+
+df_known$randomized_return <- as.vector(randomized_returns)
+df_known$randomized_return <- as.numeric(df_known$randomized_return)
+
 df_known$missclassification_randomized <- df_known$return - df_known$randomized_return
 df_known$cost_randomized <- df_known$return - df_known$randomized_return
 
@@ -47,7 +52,7 @@ df_known$cost_rf[b] <- 0.5*(df_known$item_price[b])
 
 # Sum of the cost
 rf_cost_sum <- sum(df_known$cost_rf)
-rf_cost_sum #512,470.2
+rf_cost_sum #
 
 ### NN cost
 df_known$pred_nn_prob <- nnet_known$return
@@ -67,7 +72,7 @@ df_known$cost_nn[d] <- 0.5*(df_known$item_price[d])
 
 # Sum of the cost
 nn_cost_sum <- sum(df_known$cost_nn)
-nn_cost_sum #541,835.7
+nn_cost_sum #533,865.2
 
 ### xgboost cost
 df_known$pred_xg_prob <- xgboost_known$return
@@ -87,7 +92,7 @@ df_known$cost_xg[f] <- 0.5*(df_known$item_price[f])
 
 # Sum of the cost
 xg_cost_sum <- sum(df_known$cost_xg)
-xg_cost_sum #529,106.9
+xg_cost_sum #
 
 ### h2o cost
 df_known$pred_h2o_prob <- h2o_known$return
@@ -107,7 +112,7 @@ df_known$cost_h2o[k] <- 0.5*(df_known$item_price[k])
 
 # Sum of the cost
 h2o_cost_sum <- sum(df_known$cost_h2o)
-h2o_cost_sum #554,066.8
+h2o_cost_sum #541,881.2
 
 
 
@@ -139,7 +144,19 @@ ts$cost_rf[b] <- 0.5*(ts$item_price[b])
 
 # Sum of the cost
 rf_cost_sum <- sum(ts$cost_rf)
-rf_cost_sum #111,215.3
+rf_cost_sum #
+
+### NN cost
+# Calculation the cost for cost matrix
+c <- which(ts$missclassification_nn == 1)
+ts$cost_nn[c] <- 0.5*5*{3+(0.1*ts$item_price[c])} 
+d <- which(ts$missclassification_nn == -1)
+ts$cost_nn[d] <- 0.5*(ts$item_price[d]) 
+
+# Sum of the cost
+nn_cost_sum <- sum(ts$cost_nn)
+nn_cost_sum #110,675.6
+
 
 ### xgboost cost
 # Calculation the cost for cost matrix
@@ -150,8 +167,18 @@ ts$cost_xg[f] <- 0.5*(ts$item_price[f])
 
 # Sum of the cost
 xg_cost_sum <- sum(ts$cost_xg)
-xg_cost_sum #111,189.4
+xg_cost_sum #
 
+###h2o for nn cost
+# Calculation the cost for cost matrix
+j <- which(ts$missclassification_h2o == 1)
+ts$cost_h2o[j] <- 2.5*{3+(0.1*ts$item_price[j])} 
+k <- which(ts$missclassification_h2o == -1)
+ts$cost_h2o[k] <- 0.5*(ts$item_price[k]) 
+
+# Sum of the cost
+h2o_cost_sum <- sum(ts$cost_h2o)
+h2o_cost_sum #112,016.8
 
 
 
