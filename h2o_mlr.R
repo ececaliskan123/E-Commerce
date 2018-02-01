@@ -5,6 +5,8 @@ if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("pdp")) install.packages("pdp"); library("pdp")
 if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMap")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
+if(!require("hmeasure")) install.packages("hmeasure"); library("hmeasure")
+
 # load helper to preprocess data and select fetures
 source('helpers/amend_features.R')
 # load data
@@ -116,11 +118,6 @@ save(h2o_imp_df, file = "data/h2o_imp_df")
 h2o_imp_plot <- h2o.varimp_plot(h2o_model$learner.model, num_of_features = 17)
 h2o_imp_plot
 save(h2o_imp_plot, file = "data/h2o_imp_plot")
-
-feature_names <- h2o_model$features
-pd = generatePartialDependenceData(h2o_model, trainTask)
-class(h2o_model)
-class(h2o_model$learner.model)
 
 localH2O = h2o.init(ip='localhost',
                     nthreads=-1,
