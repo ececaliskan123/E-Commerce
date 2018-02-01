@@ -15,7 +15,7 @@ nnet_class = read.csv("data/nnet_class.csv", stringsAsFactors = FALSE)
 h2o_known = read.csv("data/h2o_known.csv", stringsAsFactors = FALSE)
 h2o_class = read.csv("data/h2o_class.csv", stringsAsFactors = FALSE)
 d = read.csv('data/BADS_WS1718_known.csv')
-c = read.csv('data/BADS_WS1718_class.csv')
+#c = read.csv('data/BADS_WS1718_class.csv')
 
 # sort everything first
 xgboost_known = xgboost_known[order(xgboost_known$order_item_id),]
@@ -43,13 +43,13 @@ stopifnot(known_labels_complete && class_labels_complete)
 # create learning and prediction dataframes
 df_known = data.frame(xgboost_known$order_item_id,
                       xgboost_known$return,
-                      rf_known$pred,
+                      rf_known$return,
                       nnet_known$return,
                       h2o_known$return,
                       d$return)
 df_class = data.frame(c$order_item_id,
                       xgboost_class$return,
-                      rf_class$pred,
+                      rf_class$return,
                       nnet_class$return,
                       h2o_class$return)
 
@@ -103,8 +103,8 @@ predicted_class   = predict(stack_model, newdata = df_class)
 # assess performance
 d.result = data.frame(d$order_item_id, ifelse(predicted_classes$data$response == "return0",0,1))
 names(d.result) = c("order_item_id", "return")
-accuracy = mean(d.result[-idx.train,]$return == d[-idx.train,]$return)
-total_accuracy = mean(d$return == d.result$return)
+ts_accuracy     = mean(d.result[-idx.train,"return"] == d[-idx.train,"return"])
+tr_accuracy     = mean(d.result[idx.train, "return"] == d[idx.train,"return"])
 
 classdata.result = data.frame(df_class$order_item_id, ifelse(predicted_class$data$response == "return0",0,1))
 names(classdata.result) = c("order_item_id", "return")
