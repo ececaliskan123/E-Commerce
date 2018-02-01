@@ -7,16 +7,16 @@ if(!require("caret")) install.packages("caret"); library("caret")
 source('helpers/amend_features.R')
 # load data
 source('load_data.R')
-
+# process data
 dn = amend_features(df_known)
-###############################################
+## calculate test set indices from prediction by setting the same seed
 set.seed(1)
 idx.train = caret::createDataPartition(y = dn$return, p = 0.8, list = FALSE) 
 ts = dn[-idx.train, ]
-
+## Setup the true return values for the known dataset as a whole and the test set
 true_returns_known = subset(dn, select = c('order_item_id', 'return'))
 true_returns_test = subset(ts, select = c('order_item_id', 'return'))
-
+## setup a list to save performance measure results for individual base models
 metrics <- list()
 
 ## h2o.deeplearning predictions
@@ -82,3 +82,5 @@ colnames(base.model_performance) <- c('h2o_known',
                                       'xgboost_known', 
                                       'xgboost_test')
 print(base.model_performance)
+save(base.model_performance, file = "data/acc_auc_base_models")
+###
