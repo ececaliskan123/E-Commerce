@@ -119,4 +119,5 @@ save(h2o_imp_plot, file = "data/h2o_imp_plot")
 
 ## Calculate and plot PDPs for all variables
 partialPlots.h2o <- h2o.predict(h2o_model$learner.model, data.pdp)
+save(partialPlots.h2o, file = "data/h2o_PDPs")
 ###
