@@ -2,16 +2,18 @@ if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("caret")) install.packages("caret"); library("caret")
 
 #setwd("/mnt/learning/business-analytics-data-science/groupwork/")
-source('load_data.R')
+#source('load_data.R')
 
 #svm_known = read.csv("data/.csv", stringsAsFactors = FALSE)
 #svm_class = read.csv("data/.csv", stringsAsFactors = FALSE)
 xgboost_known = read.csv("data/xgboost_known.csv", stringsAsFactors = FALSE)
 xgboost_class = read.csv("data/xgboost_class.csv", stringsAsFactors = FALSE)
-rf_known = read.csv("data/randomforest_probability_retail.csv", stringsAsFactors = FALSE)
-rf_class = read.csv("data/randomforest_probability.csv", stringsAsFactors = FALSE)
+rf_known = read.csv("data/rf_known.csv", stringsAsFactors = FALSE)
+rf_class = read.csv("data/rf_class.csv", stringsAsFactors = FALSE)
 nnet_known = read.csv("data/nnet_known.csv", stringsAsFactors = FALSE)
 nnet_class = read.csv("data/nnet_class.csv", stringsAsFactors = FALSE)
+h2o_known = read.csv("data/h2o_known.csv", stringsAsFactors = FALSE)
+h2o_class = read.csv("data/h2o_class.csv", stringsAsFactors = FALSE)
 d = read.csv('data/BADS_WS1718_known.csv')
 c = read.csv('data/BADS_WS1718_class.csv')
 
@@ -22,15 +24,19 @@ rf_known = rf_known[order(rf_known$order_item_id),]
 rf_class = rf_class[order(rf_class$order_item_id),]
 nnet_known = nnet_known[order(nnet_known$order_item_id),]
 nnet_class = nnet_class[order(nnet_class$order_item_id),]
+h2o_known = h2o_known[order(h2o_known$order_item_id),]
+h2o_class = h2o_class[order(h2o_class$order_item_id),]
 
 # assert if we are missing labels
 known_labels_complete = 
   xgboost_known$order_item_id == rf_known$order_item_id &&
-  rf_known$order_item_id == nnet_known$order_item_id
+  rf_known$order_item_id == nnet_known$order_item_id &&
+  nnet_known$order_item_id == h2o_known$order_item_id
 
 class_labels_complete = 
   xgboost_class$order_item_id == rf_class$order_item_id &&
-  rf_class$order_item_id == nnet_class$order_item_id
+  rf_class$order_item_id == nnet_class$order_item_id &&
+  nnet_class$order_item_id == h2o_class$order_item_id
 
 stopifnot(known_labels_complete && class_labels_complete)
 
@@ -39,21 +45,25 @@ df_known = data.frame(xgboost_known$order_item_id,
                       xgboost_known$return,
                       rf_known$pred,
                       nnet_known$return,
+                      h2o_known$return,
                       d$return)
 df_class = data.frame(c$order_item_id,
                       xgboost_class$return,
                       rf_class$pred,
-                      nnet_class$return)
+                      nnet_class$return,
+                      h2o_class$return)
 
 colnames(df_known) = c("order_item_id",
                        "xgboost_return",
                        "rf_return",
                        "nnet_return",
+                       "h2o_return",
                        "return")
 colnames(df_class) = c("order_item_id",
                        "xgboost_return",
                        "rf_return",
-                       "nnet_return")
+                       "nnet_return",
+                       "h2o_return")
 levels(df_known$return) = c("return0", "return1")
 
 # create cost matrix
@@ -64,7 +74,6 @@ rownames(cost) = rownames(d)
 
 # create test and training sets
 set.seed(1)
-
 idx.train = caret::createDataPartition(y = df_known$return, p = 0.8, list = FALSE) 
 df_known$return = NULL
 tr = df_known[idx.train, ]
