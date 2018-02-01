@@ -13,11 +13,13 @@ source('helpers/amend_features.R')
 # load data
 source('load_data.R')
 
-dn = na.exclude(amend_features(df_known))
+dn = amend_features(df_known)
+# Replace 'NA' with 0. This is not going to affect predictive performance due to the fact that we will later assign all those customer that show 'NA' for delivery date a "no return", since we discovered fro the known dataset that if delivery_date = NA, then return = 0.
+dn[is.na(dn)] = 0
+is.na(dn)
 classdatan = amend_features(df_class)
 ###############################################
 set.seed(1)
-
 idx.train = caret::createDataPartition(y = dn$return, p = 0.8, list = FALSE) 
 tr = dn[idx.train, ]
 ts = dn[-idx.train, ]
