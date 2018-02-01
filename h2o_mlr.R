@@ -108,7 +108,7 @@ classdata.result[is.na(df_class$delivery_date), "return"] = 0
 write.csv(d.result, "data/h2o_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/h2o_class.csv", row.names = FALSE)
 
-## Variable importance using the olden method
+## Variable importance
 h2o_imp_df <- h2o.varimp(h2o_model$learner.model)
 h2o_imp_df
 save(h2o_imp_df, file = "data/h2o_imp_df")
@@ -117,7 +117,15 @@ h2o_imp_plot <- h2o.varimp_plot(h2o_model$learner.model, num_of_features = 17)
 h2o_imp_plot
 save(h2o_imp_plot, file = "data/h2o_imp_plot")
 
-## Calculate and plot PDPs for all variables
-partialPlots.h2o <- h2o.predict(h2o_model$learner.model, data.pdp)
-save(partialPlots.h2o, file = "data/h2o_PDPs")
+feature_names <- h2o_model$features
+pd = generatePartialDependenceData(h2o_model, trainTask)
+class(h2o_model)
+class(h2o_model$learner.model)
+
+localH2O = h2o.init(ip='localhost',
+                    nthreads=-1,
+                    min_mem_size='4G',
+                    max_mem_size='5G') # with system memory of 8GB
+
+h2o_pdp <- generatePartialDependenceData(h2o_model, trainTask, "user_id")
 ###
