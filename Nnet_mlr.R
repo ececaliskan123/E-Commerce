@@ -129,7 +129,7 @@ save(nnet_imp_plot, file = "data/nnet_imp_plot")
 
 partialPlots <- list()
 # For each of the variables, calculate the partial dependence object for further use
-for (var in names(feature_names)) {
+for (var in feature_names) {
   message("Now calculating for variable ", var)
   partialPlots[[var]][["nnet"]] <- do.call(partial, 
                                                 list(nnet_model$learner.model, 
@@ -140,8 +140,9 @@ for (var in names(feature_names)) {
                                                 plot = FALSE, prob = TRUE))
   }
 
+save(partialPlots, file = "data/h2o_PDPs_df")
 par(mfrow=c(17, 1))
 for(var in names(partialPlots)){
-  plot(partialPlots[[var]][["nnet"]], type = "l", xlab = paste(var, " - nnet"), ylab = 'Pred. prob. return', ylim = c(0, 0.5))
+  plot(partialPlots[[var]][["nnet"]], type = "l", xlab = paste(var, " - nnet"), ylab = 'Pred. prob. return', ylim = c(0.1, 0.1), xlim = c(0.1, 0.1))
 }
 ###
