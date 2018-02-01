@@ -13,7 +13,7 @@ source('helpers/amend_features.R')
 # load data
 source('load_data.R')
 
-dn = amend_features(df_known)
+dn = na.exclude(amend_features(df_known))
 classdatan = amend_features(df_class)
 ###############################################
 set.seed(1)
