@@ -109,12 +109,14 @@ write.csv(d.result, "data/h2o_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/h2o_class.csv", row.names = FALSE)
 
 ## Variable importance using the olden method
-h2o_imp_df <- h2o.varimp(h2o_model)
+h2o_imp_df <- h2o.varimp(h2o_model$learner.model)
+h2o_imp_df
 save(h2o_imp_df, file = "data/h2o_imp_df")
 
-h2o_imp_plot <- h2o.varimp_plot(h2o_model, num_of_features = 17)
+h2o_imp_plot <- h2o.varimp_plot(h2o_model$learner.model, num_of_features = 17)
+h2o_imp_plot
 save(h2o_imp_plot, file = "data/h2o_imp_plot")
 
 ## Calculate and plot PDPs for all variables
-partialPlots.h2o <- h2o.predict(h2o_model, data.pdp)
+partialPlots.h2o <- h2o.predict(h2o_model$learner.model, data.pdp)
 ###
