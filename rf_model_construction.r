@@ -2,34 +2,8 @@ if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("caret")) install.packages("caret"); library("caret")
 if(!require("h2o")) install.packages("h2o"); library("h2o")
 
-
-amend_features = function(dd){
-  dd = subset(dd, select = -c(user_dob,
-                              user_maturity,
-                              user_title,
-                              user_state,
-                              item_color,
-                              delivery_date,
-                              item_size))
-  
-  dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
-  dd$order_month = as.numeric(format(dd$order_date, "%m"))
-  dd$order_day   = as.numeric(format(dd$order_date, "%d"))
-  dd             = subset(dd, select=-order_date)
-  
-  dd$reg_year  = as.numeric(format(dd$user_reg_date, "%Y"))
-  dd$reg_month = as.numeric(format(dd$user_reg_date, "%m"))
-  dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
-  dd           = subset(dd, select=-user_reg_date)
-  
-  if("return" %in% colnames(dd)) {
-    dd = normalizeFeatures(dd, target="return")
-  }
-  
-  return(dd)
-}
-
 source('load_data.R')
+source('helpers/amend_features.R')
 
 dn         = amend_features(df_known)
 classdatan = amend_features(df_class)
@@ -89,8 +63,7 @@ save(rf_model, file = "models/rf_mlr.model")
 write.csv(d.result, "data/rf_known.csv", row.names = FALSE)
 write.csv(classdata.result, "data/rf_class.csv", row.names = FALSE)
 
-if (FALSE) {
-  importance = h2o.varimp(rf_model$learner.model$next.model$learner.model)
-  #pd.xgboost = generatePartialDependenceData(xgb_model, trainTask, "item_price")
-  #plotPartialDependence(pd.xgboost)
-}
+importance = h2o.varimp(rf_model$learner.model$next.model$learner.model)
+write.csv(importance, "data/rf_importance.csv", row.names = F)
+#pd.xgboost = generatePartialDependenceData(xgb_model, trainTask, "item_price")
+#plotPartialDependence(pd.xgboost)
