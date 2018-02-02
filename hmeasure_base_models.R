@@ -1,7 +1,7 @@
 ### base modeling performance measures
 
 if(!require("hmeasure")) install.packages("hmeasure"); library("hmeasure")
-if(!require("caret")) install.packages("caret"); library("caret")
+if(!require("mlr")) install.packages("mlr"); library("mlr")
 
 # load helper to preprocess data and select fetures
 source('helpers/amend_features.R')
@@ -55,6 +55,15 @@ metrics[["xgboost_known"]] = HMeasure(true_returns_known$return, xgboost_known$r
 # test dataset
 metrics[["xgboost_test"]] = HMeasure(true_returns_test$return, xgboost_test$return)
 
+## ranger predictions
+ranger_known <- read.csv('old/new_ranger_known.csv')
+ranger_known$return <- ifelse(xgboost_known$return > 0.5, 1, 0)
+ranger_test = ranger_known[-idx.train, ]
+# known dataset
+metrics[["ranger_known"]] = HMeasure(true_returns_known$return, ranger_known$return)
+# test dataset
+metrics[["ranger_test"]] = HMeasure(true_returns_test$return, ranger_test$return)
+
 ## Data frame with ACC and AUC for base models
 base.model_performance <- rbind(PCC = c(1-metrics[["h2o_known"]]$metrics$ER, 
                                         1-metrics[["h2o_test"]]$metrics$ER, 
@@ -63,7 +72,8 @@ base.model_performance <- rbind(PCC = c(1-metrics[["h2o_known"]]$metrics$ER,
                                         1-metrics[["rf_known"]]$metrics$ER, 
                                         1-metrics[["rf_test"]]$metrics$ER, 
                                         1-metrics[["xgboost_known"]]$metrics$ER, 
-                                        1-metrics[["xgboost_test"]]$metrics$ER), 
+                                        1-metrics[["xgboost_test"]]$metrics$ER,
+                                        1-metrics[["ranger_test"]]$metrics$ER), 
                                 AUC = c(metrics[["h2o_known"]]$metrics$AUC, 
                                         metrics[["h2o_test"]]$metrics$AUC, 
                                         metrics[["nnet_known"]]$metrics$AUC, 
@@ -71,7 +81,9 @@ base.model_performance <- rbind(PCC = c(1-metrics[["h2o_known"]]$metrics$ER,
                                         metrics[["rf_known"]]$metrics$AUC, 
                                         metrics[["rf_test"]]$metrics$AUC, 
                                         metrics[["xgboost_known"]]$metrics$AUC, 
-                                        metrics[["xgboost_test"]]$metrics$AUC))
+                                        metrics[["xgboost_test"]]$metrics$AUC,
+                                        metrics[["ranger_test"]]$metrics$AUC
+                                      ))
 
 colnames(base.model_performance) <- c('h2o_known', 
                                       'h2o_test', 
