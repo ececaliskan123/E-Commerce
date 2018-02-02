@@ -1,49 +1,27 @@
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("caret")) install.packages("caret"); library("caret")
+if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMap")
 
+# load helper to preprocess data and select fetures
+source('helpers/amend_features.R')
+# load data
 source('load_data.R')
-amend_features = function(dd){
-  dd = subset(dd, select = -c(user_dob,
-                              user_maturity,
-                              user_title,
-                              user_state,
-                              item_color,
-                              delivery_date,
-                              item_size))
-  
-  dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
-  dd$order_month = as.numeric(format(dd$order_date, "%m"))
-  dd$order_day   = as.numeric(format(dd$order_date, "%d"))
-  dd             = subset(dd, select=-order_date)
-  
-  dd$reg_year  = as.numeric(format(dd$user_reg_date, "%Y"))
-  dd$reg_month = as.numeric(format(dd$user_reg_date, "%m"))
-  dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
-  dd           = subset(dd, select=-user_reg_date)
-  
-  if("return" %in% colnames(dd)) {
-    dd = normalizeFeatures(dd, target="return")
-    #dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
-  } else {
-    #dd = createDummyFeatures(dd, cols=c("item_size"))
-  }
-  
-  return(dd)
-}
 
+df_known = amend_features(df_known)
+df_known[is.na(df_known)] = 0
 n = nrow(df_known)
+
 test.results <- data.frame(matrix(ncol = 3, nrow = 0))
 rn <- c("tr_size", "ts_acc", "tr_acc")
 colnames(test.results) = rn
+
+parallelStartSocket(parallel::detectCores())
 
 for (part in seq(0.05,0.8,0.05)) {
   set.seed(1)
   idx.train <- createDataPartition(y=df_known$return, p=part, list = FALSE) 
   tr <- df_known[idx.train, ]  # training set
   ts <- df_known[-idx.train, ] # test set 
-  
-  tr = amend_features(tr)
-  ts = amend_features(ts)
   
   train_task = makeClassifTask(data = tr, target = "return", positive = 1)
   resample_desc = makeResampleDesc("CV", iters = 5)
@@ -54,14 +32,14 @@ for (part in seq(0.05,0.8,0.05)) {
       objective = "binary:logistic",
       eval_metric = "error",
       nrounds = 200,
-      base_score = mean(tr$return)
+      base_score = mean(as.numeric(as.character(tr$return)))
     )
   )
   cv.ranger = crossval(learner = xgb_learner,
                        task = train_task,
                        iters = 5,
                        stratify = TRUE,
-                       measures = acc,
+                       measures = mlr::acc,
                        show.info = T)
   txgb_model = mlr::train(xgb_learner, train_task)
   
@@ -72,6 +50,10 @@ for (part in seq(0.05,0.8,0.05)) {
   test.results = rbind(test.results,results)
 }
 
-ggplot(test.results, aes(tr_size)) +                    # basic graphical object
+parallelStop()
+
+xgboost_overfit_plot <- ggplot(test.results, aes(tr_size)) +                    # basic graphical object
   geom_line(aes(y=tr_acc), colour="red") +  # first layer
   geom_line(aes(y=ts_acc), colour="green")  # 
+xgboost_overfit_plot
+save(xgboost_overfit_plot, file = "data/xgboost_overfit_plot")
