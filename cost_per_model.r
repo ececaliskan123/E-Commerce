@@ -52,7 +52,7 @@ df_known$cost_rf[b] <- 0.5*(df_known$item_price[b])
 
 # Sum of the cost
 rf_cost_sum <- sum(df_known$cost_rf)
-rf_cost_sum #
+rf_cost_sum #512,563.2
 
 ### NN cost
 df_known$pred_nn_prob <- nnet_known$return
@@ -92,7 +92,7 @@ df_known$cost_xg[f] <- 0.5*(df_known$item_price[f])
 
 # Sum of the cost
 xg_cost_sum <- sum(df_known$cost_xg)
-xg_cost_sum #
+xg_cost_sum #526,865.2
 
 ### h2o cost
 df_known$pred_h2o_prob <- h2o_known$return
@@ -144,7 +144,7 @@ ts$cost_rf[b] <- 0.5*(ts$item_price[b])
 
 # Sum of the cost
 rf_cost_sum <- sum(ts$cost_rf)
-rf_cost_sum #
+rf_cost_sum #105,557.5
 
 ### NN cost
 # Calculation the cost for cost matrix
@@ -167,7 +167,7 @@ ts$cost_xg[f] <- 0.5*(ts$item_price[f])
 
 # Sum of the cost
 xg_cost_sum <- sum(ts$cost_xg)
-xg_cost_sum #
+xg_cost_sum #108,367.1
 
 ###h2o for nn cost
 # Calculation the cost for cost matrix
