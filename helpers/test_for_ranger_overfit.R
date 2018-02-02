@@ -1,40 +1,18 @@
 ### Random forest
-library(mlr)
-library(dplyr)
-library(caret)
 
+if(!require("mlr")) install.packages("mlr"); library("mlr")
+if(!require("dplyr")) install.packages("dplyr"); library("dplyr")
+if(!require("caret")) install.packages("caret"); library("caret")
+if(!require("data.table")) install.packages("data.table"); library("data.table")
+if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
+
+# load helper to preprocess data and select fetures
+source('helpers/amend_features.R')
+# load data
 source('load_data.R')
 
-amend_features = function(dd){
-  dd = subset(dd, select = -c(user_dob,
-                              user_maturity,
-                              user_title,
-                              user_state,
-                              item_color,
-                              delivery_date,
-                              item_size))
-  
-  dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
-  dd$order_month = as.numeric(format(dd$order_date, "%m"))
-  dd$order_day   = as.numeric(format(dd$order_date, "%d"))
-  dd             = subset(dd, select=-order_date)
-  
-  dd$reg_year  = as.numeric(format(dd$user_reg_date, "%Y"))
-  dd$reg_month = as.numeric(format(dd$user_reg_date, "%m"))
-  dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
-  dd           = subset(dd, select=-user_reg_date)
-  dd$return    = as.factor(dd$return)
-  
-  if("return" %in% colnames(dd)) {
-    dd = normalizeFeatures(dd, target="return")
-    #dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
-  } else {
-    #dd = createDummyFeatures(dd, cols=c("item_size"))
-  }
-  
-  return(dd)
-}
-
+df_known = amend_features(df_known)
+df_known[is.na(df_known)] = 0
 n = nrow(df_known)
 
 test.results <- data.frame(matrix(ncol = 3, nrow = 0))
@@ -42,20 +20,31 @@ rn <- c("tr_size", "ts_acc", "tr_acc")
 colnames(test.results) = rn
 
 return <- "return"
-vars <- c("user_id", "order_item_id", "order_year", "order_month", "order_day",
-          "month_of_delivery", "price_and_age",
-          "item_id", "brand_id", "item_price",
-          "reg_year","reg_month","reg_day", "delivery_duration")
+vars <- c("user_id", 
+          "order_item_id", 
+          "item_id", 
+          "item_size", 
+          "item_color", 
+          "brand_id", 
+          "user_dob", 
+          "delivery_duration", 
+          "user_maturity", 
+          "price_and_age", 
+          "avg_return", 
+          "nr_obs", 
+          "order_month", 
+          "order_day", 
+          "del_year", 
+          "del_month", 
+          "del_day")
 fmla <- as.formula(paste(return, "~", paste(vars, collapse = " + ")))
 
+## Take tuned parameters
 for (part in seq(0.05,0.8,0.05)) {
   set.seed(1)
-  idx.train <- createDataPartition(y=df_known$return, p=part, list = FALSE) 
+  idx.train <- createDataPartition(y = df_known$return, p = part, list = FALSE) 
   tr <- df_known[idx.train, ]  # training set
   ts <- df_known[-idx.train, ] # test set 
-  
-  tr = amend_features(tr)
-  ts = amend_features(ts)
   
   train_task = makeClassifTask(data = tr, target = "return", positive = 1)
   resample_desc = makeResampleDesc("CV", iters = 5)
@@ -63,11 +52,10 @@ for (part in seq(0.05,0.8,0.05)) {
     "classif.ranger",
     predict.type = "prob",
     par.vals = list(
-      num.trees = 500,
-      mtry = 6,
+      num.trees = 800,
+      mtry = 4,
       num.threads = 4,
-      verbose = T
-    )
+      verbose = T)
   )
   cv.ranger = crossval(learner = ranger_learner,
                        task = train_task,
@@ -84,6 +72,8 @@ for (part in seq(0.05,0.8,0.05)) {
   test.results = rbind(test.results,results)
 }
 
-ggplot(test.results, aes(tr_size)) +                    # basic graphical object
+ranger_overfit_plot <- ggplot(test.results, aes(tr_size)) +                    # basic graphical object
   geom_line(aes(y=tr_acc), colour="red") +  # first layer
   geom_line(aes(y=ts_acc), colour="green")  # 
+
+save(ranger_overfit_plot, file = "data/nnet_overfit_plot")
