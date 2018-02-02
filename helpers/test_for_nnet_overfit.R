@@ -84,5 +84,5 @@ parallelStop()
 nnet_overfit_plot <- ggplot(test.results, aes(tr_size)) +                    # basic graphical object
   geom_line(aes(y=tr_acc), colour="red") +  # first layer
   geom_line(aes(y=ts_acc), colour="green")  # 
-
+nnet_overfit_plot
 save(nnet_overfit_plot, file = "data/nnet_overfit_plot")
