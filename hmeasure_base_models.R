@@ -73,6 +73,7 @@ base.model_performance <- rbind(PCC = c(1-metrics[["h2o_known"]]$metrics$ER,
                                         1-metrics[["rf_test"]]$metrics$ER, 
                                         1-metrics[["xgboost_known"]]$metrics$ER, 
                                         1-metrics[["xgboost_test"]]$metrics$ER,
+                                        1-metrics[["ranger_known"]]$metrics$ER,
                                         1-metrics[["ranger_test"]]$metrics$ER), 
                                 AUC = c(metrics[["h2o_known"]]$metrics$AUC, 
                                         metrics[["h2o_test"]]$metrics$AUC, 
@@ -82,6 +83,7 @@ base.model_performance <- rbind(PCC = c(1-metrics[["h2o_known"]]$metrics$ER,
                                         metrics[["rf_test"]]$metrics$AUC, 
                                         metrics[["xgboost_known"]]$metrics$AUC, 
                                         metrics[["xgboost_test"]]$metrics$AUC,
+                                        metrics[["ranger_known"]]$metrics$AUC,
                                         metrics[["ranger_test"]]$metrics$AUC
                                       ))
 
@@ -92,7 +94,10 @@ colnames(base.model_performance) <- c('h2o_known',
                                       'rf_known', 
                                       'rf_test', 
                                       'xgboost_known', 
-                                      'xgboost_test')
+                                      'xgboost_test',
+                                      'ranger_known',
+                                      'ranger_test'
+                                    )
 print(base.model_performance)
 save(base.model_performance, file = "data/acc_auc_base_models")
 ###
