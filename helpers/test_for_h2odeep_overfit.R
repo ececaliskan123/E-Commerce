@@ -8,8 +8,6 @@ if(!require("parallelMap")) install.packages("parallelMap"); library("parallelMa
 if(!require("data.table")) install.packages("data.table"); library("data.table")
 if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
 
-load('models/h2o_mlr.model')
-h2o_model$learner$par.vals
 # load helper to preprocess data and select fetures
 source('helpers/amend_features.R')
 # load data
