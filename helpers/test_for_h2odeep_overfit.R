@@ -1,7 +1,6 @@
-### nnet overfitting test
+### h2o.deeplearning overfitting test
 
-if(!require("nnet")) install.packages("nnet"); library("nnet")
-if(!require("NeuralNetTools")) install.packages("NeuralNetTools"); library("NeuralNetTools")
+if(!require("h2o")) install.packages("h2o"); library("h2o")
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("caret")) install.packages("caret"); library("caret")
 if(!require("dplyr")) install.packages("dplyr"); library("dplyr")
@@ -42,8 +41,6 @@ vars <- c("user_id",
           "del_day")
 fmla <- as.formula(paste(return, "~", paste(vars, collapse = " + ")))
 
-parallelStartSocket(parallel::detectCores())
-
 ## Take tuned parameters
 for (part in seq(0.05,0.8,0.05)) {
   set.seed(1)
@@ -53,36 +50,38 @@ for (part in seq(0.05,0.8,0.05)) {
   
   train_task = makeClassifTask(data = tr, target = "return", positive = 1)
   resample_desc = makeResampleDesc("CV", iters = 5)
-  nnet_learner = makeLearner(
-    "classif.nnet",
+  h2o_learner = makeLearner(
+    "classif.h2o.deeplearning",
     predict.type = "prob",
     par.vals = list(
-      size = 15,
-      MaxNWts = 10000,
-      maxit = 200,
-      decay = 0.00921592
+      activation = "RectifierWithDropout",
+      hidden = c(61, 38, 58),
+      epochs = 10,
+      rho = 0.9058344,
+      epsilon = 8.905493e-06,
+      input_dropout_ratio = 0.06722173,
+      hidden_dropout_ratios = c(0.00323078, 0.68089378, 0.42031610),
+      max_w2 = 3.338197
       # num.threads = 4,
       # verbose = T)
-  ))
-  cv.nnet = crossval(learner = nnet_learner,
-                       task = train_task,
-                       iters = 5,
-                       stratify = TRUE,
-                       measures = mlr::acc,
-                       show.info = T)
-  nnet_model = mlr::train(nnet_learner, train_task)
+    ))
+  cv.h2o = crossval(learner = h2o_learner,
+                     task = train_task,
+                     iters = 5,
+                     stratify = TRUE,
+                     measures = mlr::acc,
+                     show.info = T)
+  h2o_model = mlr::train(h2o_learner, train_task)
   
-  ts$pred <- predict(nnet_model, newdata=ts)$data$response
-  tr$pred <- predict(nnet_model, newdata=tr)$data$response
+  ts$pred <- predict(h2o_model, newdata=ts)$data$response
+  tr$pred <- predict(h2o_model, newdata=tr)$data$response
   results =  data.frame(part, mean(ts$pred == ts$return), mean(tr$pred == tr$return))
   colnames(results) = rn
   test.results = rbind(test.results,results)
 }
 
-parallelStop()
-
-nnet_overfit_plot <- ggplot(test.results, aes(tr_size)) +                    # basic graphical object
+h2o_overfit_plot <- ggplot(test.results, aes(tr_size)) +                    # basic graphical object
   geom_line(aes(y=tr_acc), colour="red") +  # first layer
   geom_line(aes(y=ts_acc), colour="green")  # 
-nnet_overfit_plot
-save(nnet_overfit_plot, file = "data/nnet_overfit_plot")
+h2o_overfit_plot
+save(h2o_overfit_plot, file = "data/h2o_overfit_plot")
