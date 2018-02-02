@@ -80,8 +80,8 @@ for (part in seq(0.05,0.8,0.05)) {
   test.results = rbind(test.results,results)
 }
 
-h2o_overfit_plot <- ggplot(test.results, aes(tr_size)) +                    # basic graphical object
+h2o.deep_overfit_plot <- ggplot(test.results, aes(tr_size)) +                    # basic graphical object
   geom_line(aes(y=tr_acc), colour="red") +  # first layer
   geom_line(aes(y=ts_acc), colour="green")  # 
-h2o_overfit_plot
-save(h2o_overfit_plot, file = "data/h2o_overfit_plot")
+h2o.deep_overfit_plot
+save(h2o.deep_overfit_plot, file = "data/h2o.deep_overfit_plot")
