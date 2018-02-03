@@ -1,4 +1,4 @@
-### Random forest
+### Random forest with h2o overfitting test
 library(mlr)
 library(dplyr)
 library(caret)
@@ -68,7 +68,7 @@ for (part in seq(0.05,0.8,0.05)) {
       min_rows = 47
     )
   )
-  cv.ranger = crossval(learner   = rf_learner,
+  cv.h2o = crossval(learner   = rf_learner,
                        task      = train_task,
                        iters     = 5,
                        stratify  = TRUE,
