@@ -103,15 +103,3 @@ classdata.result[is.na(df_class$delivery_date), "return"] = 0
 
 write.csv(d.result, "old/ranger_known.csv", row.names = FALSE)
 write.csv(classdata.result, "old/ranger_class.csv", row.names = FALSE)
-
-
-
-
-
-
-
-
-
-# Calculate AUC performance on test set 
-auc[["rf"]] <- mlr::performance(yhat[["rf"]], measures = mlr::auc)
-auc[["rf"]] #0.91037 
