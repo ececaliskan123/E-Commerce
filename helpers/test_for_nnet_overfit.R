@@ -14,9 +14,9 @@ source('helpers/amend_features.R')
 # load data
 source('load_data.R')
 
-df_known = amend_features(df_known)
-df_known[is.na(df_known)] = 0
-n = nrow(df_known)
+dn = amend_features(df_known)
+dn[is.na(dn)] = 0
+n = nrow(dn)
 
 test.results <- data.frame(matrix(ncol = 3, nrow = 0))
 rn <- c("tr_size", "ts_acc", "tr_acc")
@@ -40,30 +40,32 @@ vars <- c("user_id",
           "del_year", 
           "del_month", 
           "del_day")
+
 fmla <- as.formula(paste(return, "~", paste(vars, collapse = " + ")))
 
 parallelStartSocket(parallel::detectCores())
 
 ## Take tuned parameters
-for (part in seq(0.05,0.8,0.05)) {
+for (part in seq(0.05, 0.8, 0.05)) {
   set.seed(1)
-  idx.train <- createDataPartition(y = df_known$return, p = part, list = FALSE) 
-  tr <- df_known[idx.train, ]  # training set
-  ts <- df_known[-idx.train, ] # test set 
+  idx.train <- createDataPartition(y = dn$return, p = part, list = FALSE) 
+  tr <- dn[idx.train, ]  # training set
+  tr1 <- dn[idx.train, ] # for class hack
+  ts <- dn[-idx.train, ] # test set 
+  ts <- dn[-idx.train, ] # for class hack
   
   train_task = makeClassifTask(data = tr, target = "return", positive = 1)
+  test_task = makeClassifTask(data = ts, target = "return", positive = 1)
+  
   resample_desc = makeResampleDesc("CV", iters = 5)
-  nnet_learner = makeLearner(
-    "classif.nnet",
-    predict.type = "prob",
-    par.vals = list(
-      size = 15,
-      MaxNWts = 10000,
-      maxit = 200,
-      decay = 0.00921592
-      # num.threads = 4,
-      # verbose = T)
-  ))
+  nnet_learner = makeLearner("classif.nnet", 
+                             predict.type = "prob",
+                             par.vals = list(size = 15, 
+                                             MaxNWts = 10000,
+                                             maxit = 200,
+                                             decay = 0.00921592
+                            ))
+  
   cv.nnet = crossval(learner = nnet_learner,
                        task = train_task,
                        iters = 5,
@@ -72,17 +74,21 @@ for (part in seq(0.05,0.8,0.05)) {
                        show.info = T)
   nnet_model = mlr::train(nnet_learner, train_task)
   
-  ts$pred <- predict(nnet_model, newdata=ts)$data$response
-  tr$pred <- predict(nnet_model, newdata=tr)$data$response
+  ts$pred <- predict(nnet_model, test_task)$data$response
+  ts$pred[is.na(ts1$del_day), "pred"] = 0 # class hack
+  tr$pred <- predict(nnet_model, train_task)$data$response
+  tr$pred[is.na(tr1$del_day), "pred"] = 0 # class hack
   results =  data.frame(part, mean(ts$pred == ts$return), mean(tr$pred == tr$return))
   colnames(results) = rn
-  test.results = rbind(test.results,results)
+  test.results = rbind(test.results, results)
 }
 
 parallelStop()
 
-nnet_overfit_plot <- ggplot(test.results, aes(tr_size)) +                    # basic graphical object
+# Plot overfitting graph and infer test result
+nnet_overfit_plot <- ggplot(test.results, aes(tr_size)) + # basic graphical object
   geom_line(aes(y=tr_acc), colour="red") +  # first layer
-  geom_line(aes(y=ts_acc), colour="green")  # 
+  geom_line(aes(y=ts_acc), colour="green")  # second layer
 nnet_overfit_plot
+# Save graph
 save(nnet_overfit_plot, file = "data/nnet_overfit_plot")
