@@ -1,8 +1,7 @@
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("caret")) install.packages("caret"); library("caret")
 
-#setwd("/mnt/learning/business-analytics-data-science/groupwork/")
-#source('load_data.R')
+# IMPORTANT! working directory needs to be project root!
 
 #svm_known = read.csv("data/.csv", stringsAsFactors = FALSE)
 #svm_class = read.csv("data/.csv", stringsAsFactors = FALSE)
@@ -80,22 +79,51 @@ tr = df_known[idx.train, ]
 ts = df_known[-idx.train, ]
 
 # train the regression
+#trainTask = makeClassifTask(data = tr, target = "return", positive = 1)
 trainTask = makeCostSensTask(data = tr,
                              cost = cost[idx.train,])
-resample_desc = makeResampleDesc("CV", iters = 50)
+resample_desc = makeResampleDesc("CV", iters = 5)
+tune_control = makeTuneControlRandom(maxit = 40)
+
+xgb_params = makeParamSet(
+  # The number of trees in the model (each one built sequentially)
+  makeIntegerParam("nrounds", lower = 300, upper = 600),
+  # number of splits in each tree
+  makeIntegerParam("max_depth", lower = 6, upper = 10),
+  # "shrinkage" - prevents overfitting
+  makeNumericParam("eta", lower = .01, upper = .3),
+  # L2 regularization - prevents overfitting
+  makeNumericParam("lambda", lower = -1, upper = 0, trafo = function(x) 10^x),
+  makeNumericParam("gamma",  lower = 0,  upper = 0.3),
+  makeNumericParam("subsample", lower = 0.6, upper = 0.9)
+)
 
 stack_learner = makeLearner(
-  "classif.logreg",
-  predict.type = "response"
+  "classif.xgboost",
+  predict.type = "prob",
+  par.vals = list(
+    objective = "binary:logistic",
+    eval_metric = "error",
+    nrounds = 200,
+    base_score = mean(d$return == 1)
+  )
 )
 stack_learner = makeCostSensClassifWrapper(stack_learner)
-stack_train = resample(
-                      learner    = stack_learner,
-                      task       = trainTask,
-                      resampling = resample_desc
-                      )
-stack_model = mlr::train(stack_learner, trainTask)
 
+tuned_params = tuneParams(
+  learner = stack_learner,
+  task = trainTask,
+  resampling = resample_desc,
+  par.set = xgb_params,
+  control = tune_control
+)
+
+stack_tuned_learner = setHyperPars(
+  learner = stack_learner,
+  par.vals = tuned_params$x
+)
+
+stack_model = mlr::train(stack_tuned_learner, trainTask)
 # create final predictions
 predicted_classes = predict(stack_model, newdata = df_known)
 predicted_class   = predict(stack_model, newdata = df_class)
