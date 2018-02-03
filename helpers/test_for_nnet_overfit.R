@@ -75,9 +75,9 @@ for (part in seq(0.05, 0.8, 0.05)) {
   nnet_model = mlr::train(nnet_learner, train_task)
   
   ts$pred <- predict(nnet_model, test_task)$data$response
-  ts$pred[is.na(ts1$del_day), "return"] = 0 # class hack
+  ts$pred[is.na(ts1$del_day), "pred"] = 0 # class hack
   tr$pred <- predict(nnet_model, train_task)$data$response
-  tr$pred[is.na(tr1$del_day), "return"] = 0 # class hack
+  tr$pred[is.na(tr1$del_day), "pred"] = 0 # class hack
   results =  data.frame(part, mean(ts$pred == ts$return), mean(tr$pred == tr$return))
   colnames(results) = rn
   test.results = rbind(test.results, results)
