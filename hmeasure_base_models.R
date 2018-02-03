@@ -56,7 +56,7 @@ metrics[["xgboost_known"]] = HMeasure(true_returns_known$return, xgboost_known$r
 metrics[["xgboost_test"]] = HMeasure(true_returns_test$return, xgboost_test$return)
 
 ## ranger predictions
-ranger_known <- read.csv('old/new_ranger_known.csv')
+ranger_known <- read.csv('old/ranger_known.csv')
 ranger_known$return <- ifelse(xgboost_known$return > 0.5, 1, 0)
 ranger_test = ranger_known[-idx.train, ]
 # known dataset
