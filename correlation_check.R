@@ -1,7 +1,7 @@
 #svm_known = read.csv("data/.csv", stringsAsFactors = FALSE)
 #svm_class = read.csv("data/.csv", stringsAsFactors = FALSE)
 xgboost_known = read.csv("data/xgboost_known.csv", stringsAsFactors = FALSE)
-rf_known = read.csv("data/randomforest_probability_retail.csv", stringsAsFactors = FALSE)
+rf_known = read.csv("data/rf_known.csv", stringsAsFactors = FALSE)
 nnet_known = read.csv("data/nnet_known.csv", stringsAsFactors = FALSE)
 h2o_known = read.csv("data/h2o_known.csv", stringsAsFactors = FALSE)
 
