@@ -88,7 +88,7 @@ param_set = makeParamSet(
   makeIntegerParam("num.trees",     lower = 200, upper = 450),
   makeIntegerParam("min.node.size", lower = 1,   upper = 200)
 )
-rscontrol = makeTuneControlRandom(maxit = 20L)
+rscontrol = makeTuneControlRandom(maxit = 50L)
 
 stack_learner = makeLearner(
   "classif.ranger",
