@@ -76,4 +76,4 @@ ranger_overfit_plot <- ggplot(test.results, aes(tr_size)) +                    #
   geom_line(aes(y=tr_acc), colour="red") +  # first layer
   geom_line(aes(y=ts_acc), colour="green")  # 
 
-save(ranger_overfit_plot, file = "data/nnet_overfit_plot")
+save(ranger_overfit_plot, file = "old/ranger_overfit_plot")
