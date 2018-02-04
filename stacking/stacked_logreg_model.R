@@ -75,33 +75,45 @@ rownames(cost) = rownames(d)
 # create test and training sets
 set.seed(1)
 idx.train = caret::createDataPartition(y = df_known$return, p = 0.8, list = FALSE) 
-df_known$return = NULL
+#df_known$return = NULL
 tr = df_known[idx.train, ]
 ts = df_known[-idx.train, ]
 
 # train the regression
-trainTask = makeCostSensTask(data = tr,
-                             cost = cost[idx.train,])
-resample_desc = makeResampleDesc("CV", iters = 50)
+#trainTask = makeCostSensTask(data = tr, cost = cost[idx.train,])
+trainTask = makeClassifTask(data = tr, target = "return", positive = 1)
+resample_desc = makeResampleDesc("CV", iters = 5)
+param_set = makeParamSet(makeNumericParam("lambda", lower = 0.000001, upper = 100))
+rscontrol = makeTuneControlRandom(maxit = 15L)
 
 stack_learner = makeLearner(
-  "classif.logreg",
-  predict.type = "response"
+  "classif.h2o.glm",
+  predict.type = "response",
+  par.vals = list(
+    alpha = 1,
+    standardize = F,
+    lambda_search = F
+  )
 )
-stack_learner = makeCostSensClassifWrapper(stack_learner)
-stack_train = resample(
-                      learner    = stack_learner,
-                      task       = trainTask,
-                      resampling = resample_desc
-                      )
-stack_model = mlr::train(stack_learner, trainTask)
+#stack_learner = makeCostSensClassifWrapper(stack_learner)
+
+tuning <- tuneParams(
+  learner = stack_learner, 
+  resampling = resample_desc, 
+  task = trainTask, 
+  par.set = param_set,
+  control = rscontrol)
+stack_learner.tuned = setHyperPars(stack_learner, par.vals = tuning$x)
+
+stack_model = mlr::train(stack_learner.tuned, trainTask)
 
 # create final predictions
 predicted_classes = predict(stack_model, newdata = df_known)
 predicted_class   = predict(stack_model, newdata = df_class)
 
 # assess performance
-d.result = data.frame(d$order_item_id, ifelse(predicted_classes$data$response == "return0",0,1))
+#d.result = data.frame(d$order_item_id, ifelse(predicted_classes$data$response == "return0",0,1))
+d.result = data.frame(d$order_item_id, predicted_classes$data$response)
 names(d.result) = c("order_item_id", "return")
 ts_accuracy     = mean(d.result[-idx.train,"return"] == d[-idx.train,"return"])
 tr_accuracy     = mean(d.result[idx.train, "return"] == d[idx.train,"return"])

@@ -38,10 +38,10 @@ rf
 rf.parms <- makeParamSet(
   # The recommendation for mtry by Breiman is squareroot number of columns
   makeIntegerParam("mtry", lower = 2, upper = 6), # Number of features selected at each node, smaller -> faster
-  makeIntegerParam("num.trees", lower = 200, upper = 1000) # Number of tree, smaller -> faster
+  makeIntegerParam("num.trees", lower = 200, upper = 800) # Number of tree, smaller -> faster
 ) 
 # How dense should the parameters be selected from the ranges?
-tuneControl <- makeTuneControlRandom(maxit = 50L, tune.threshold = TRUE)
+tuneControl <- makeTuneControlGrid(resolution = 3, tune.threshold = TRUE)
 # Sampling strategy
 # Given our small dataset, we do 5-fold cross-validation
 rdesc <- makeResampleDesc(method = "CV", iters = 5, stratify = TRUE)
@@ -83,6 +83,7 @@ acc[["ranger_test"]]
 yhat[["ranger_known"]]<-predict(ranger_model, newdata = dn)
 
 # Use tuned model to predict whole class dataset
+classdatan[is.na(classdatan)] = 0
 yhat[["ranger_class"]]<-predict(ranger_model, newdata = classdatan)
 
 # Create an object containing order_item_id and predicted probabilities for known dataset
@@ -103,3 +104,4 @@ classdata.result[is.na(df_class$delivery_date), "return"] = 0
 
 write.csv(d.result, "old/ranger_known.csv", row.names = FALSE)
 write.csv(classdata.result, "old/ranger_class.csv", row.names = FALSE)
+
