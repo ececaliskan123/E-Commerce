@@ -131,6 +131,10 @@ classdata.result[is.na(c$delivery_date), "return"] = 0
 write.csv(d.result, "data/stacked_known_ranger.csv", row.names = FALSE)
 write.csv(classdata.result, "data/stacked_class_ranger.csv", row.names = FALSE)
 
+# $mtry [1] 3
+# $num.trees [1] 397
+# $min.node.size [1] 184
+
 if (FALSE) {
   d.result$truth = d$return
   d.result$cost  = NA

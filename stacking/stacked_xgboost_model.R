@@ -142,8 +142,8 @@ d.result[is.na(d$delivery_date), "return"] = 0
 classdata.result[is.na(c$delivery_date), "return"] = 0
 
 # and write out final predictions
-write.csv(d.result, "data/stacked_known.csv", row.names = FALSE)
-write.csv(classdata.result, "data/stacked_class.csv", row.names = FALSE)
+write.csv(d.result, "data/stacked_xgboost_known.csv", row.names = FALSE)
+write.csv(classdata.result, "data/stacked_xgboost_class.csv", row.names = FALSE)
 
 if (FALSE) {
   d.result$truth = d$return
