@@ -93,3 +93,15 @@ importance = xgb.importance(feature_names = colnames(tr), model = xgb_model$lear
 s_cols = importance[,c("Gain","Cover","Frequency")]
 importance = data.frame(importance[,"Feature"], s_cols)
 write.csv(importance, "data/xgb_importance.csv", row.names = F)
+
+# For each of the variables, calculate the partial dependence object for further use
+partialPlots <- list()
+feature_names = xgb_model$features
+for (var in feature_names) {
+  message("Now calculating for variable ", var)
+  partialPlots[[var]] = generatePartialDependenceData(xgb_model,
+                                                      trainTask,
+                                                      var)
+}
+
+save(partialPlots, file = "data/xgboost_PDPs_df")
