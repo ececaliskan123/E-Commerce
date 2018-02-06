@@ -119,10 +119,34 @@ h2o_imp_plot <- h2o.varimp_plot(h2o_model$learner.model, num_of_features = 17)
 h2o_imp_plot
 save(h2o_imp_plot, file = "data/h2o_imp_plot")
 
+## h2o.deeplearning PDPs
 localH2O = h2o.init(ip='localhost',
                     nthreads=-1,
                     min_mem_size='4G',
                     max_mem_size='5G') # with system memory of 8GB
 
-h2o_pdp <- generatePartialDependenceData(h2o_model, trainTask, "user_id")
-###
+makeh2o.pdp <- makeLearner("classif.h2o.deeplearning", 
+                       predict.type="prob", 
+                       par.vals = list(activation = "RectifierWithDropout", 
+                                       hidden = c(61, 38, 58), 
+                                       epochs = 10, 
+                                       rho = 0.9058344, 
+                                       epsilon = 8.905493e-06, 
+                                       input_dropout_ratio = 0.06722173, 
+                                       hidden_dropout_ratios = c(0.00323078, 0.68089378, 0.42031610), 
+                                       max_w2 = 3.338197))
+
+tuned.h2o.pdp<-setHyperPars(makeh2o.pdp)
+h2o_model.pdp<-mlr::train(tuned.h2o.pdp, trainTask)
+
+feature_names <- h2o_model.pdp$features
+partialPlots <- list()
+# For each of the variables, calculate the partial dependence object for further use
+for (var in feature_names) {
+  message("Now calculating for variable ", var)
+  partialPlots[[var]] = generatePartialDependenceData(h2o_model.pdp,
+                                                      trainTask,
+                                                      var)
+}
+
+save(partialPlots, file = "data/h2o_PDPs_df")
