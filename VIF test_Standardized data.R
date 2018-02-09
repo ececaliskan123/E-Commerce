@@ -5,37 +5,9 @@ if(!require("data.table")) install.packages("data.table"); library("data.table")
 if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
 if(!require("car")) install.packages("car"); library("car")
 
-amend_features = function(dd){
-  # dd = subset(dd, select = -c(delivery_date))
-  # dd = subset(dd, select = -c(user_dob, user_maturity, user_title, user_state, item_color, item_price, item_size))
-  # Added the features item_price and item_size to the previous line due to low RF variable importance scores
-  dd$order_year  = as.numeric(format(dd$order_date, "%Y"))
-  dd$order_month = as.numeric(format(dd$order_date, "%m"))
-  dd$order_day   = as.numeric(format(dd$order_date, "%d"))
-  dd             = subset(dd, select=-order_date)
-  
-  dd$reg_year  = as.numeric(format(dd$user_reg_date, "%Y"))
-  dd$reg_month = as.numeric(format(dd$user_reg_date, "%m"))
-  dd$reg_day   = as.numeric(format(dd$user_reg_date, "%d"))
-  dd           = subset(dd, select=-user_reg_date)
-  
-  dd$del_year  = as.numeric(format(dd$delivery_date, "%Y"))
-  dd$del_month = as.numeric(format(dd$delivery_date, "%m"))
-  dd$del_day   = as.numeric(format(dd$delivery_date, "%d"))
-  dd           = subset(dd, select=-c(delivery_date, month_of_delivery))
-  
-  dd$return = as.numeric(as.character(dd$return))
-  
-    if("return" %in% colnames(dd)) {
-    dd = normalizeFeatures(dd, target="return")
-    # dd = createDummyFeatures(dd, target="return", cols=c("item_size"))
-  } else {
-    # dd = createDummyFeatures(dd, cols=c("item_size"))
-  }
-  # Deselected createDummyFeatures due to the deletion of features item_size and item_price (see above)
-  return(dd)
-}
-
+# load helper to preprocess data and select fetures
+source('helpers/amend_features.R')
+# load data
 source('load_data.R')
 
 ### Process known dataset
@@ -44,7 +16,14 @@ dn = amend_features(df_known)
 ### Look at correlation to see whether multicollinearity could be present
 cor_raw <- round(cor(dn), 3)
 cor_raw
-write.csv(cor_raw, file = "data/correlation_table")
+write.csv(cor_raw, file = "data/correlation_table.csv")
+
+dn_na <- na.exclude(dn)
+dn_na$return <- as.numeric(as.character(dn_na$return))
+cor_raw2 <- round(cor(dn_na), 3)
+cor_raw2
+write.csv(cor_raw2, file = "data/correlation_table2.csv")
+
 # As some variables are highly correlated, proceed with VIF test
 dn$return <- as.factor(dn$return)
 ### Create regression model that follows our specification for prediction to test for multicollinearity
