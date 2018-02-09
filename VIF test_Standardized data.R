@@ -7,22 +7,27 @@ if(!require("car")) install.packages("car"); library("car")
 
 # load helper to preprocess data and select fetures
 source('helpers/amend_features.R')
+source('helpers/amend_features_beta.R')
 # load data
 source('load_data.R')
 
 ### Process known dataset
 dn = amend_features(df_known)
+dn2 = amend_features_beta(df_known)
 ##############################################
 ### Look at correlation to see whether multicollinearity could be present
 cor_raw <- round(cor(dn), 3)
 cor_raw
 write.csv(cor_raw, file = "data/correlation_table.csv")
 
-dn_na <- na.exclude(dn)
+dn_na <- na.exclude(dn2)
 dn_na$return <- as.numeric(as.character(dn_na$return))
+dn_na <- subset(dn_na, select = -c(order_date, delivery_date, user_reg_date))
+
 cor_raw2 <- round(cor(dn_na), 3)
 cor_raw2
 write.csv(cor_raw2, file = "data/correlation_table2.csv")
+
 
 # As some variables are highly correlated, proceed with VIF test
 dn$return <- as.factor(dn$return)
