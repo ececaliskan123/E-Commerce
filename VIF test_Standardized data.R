@@ -42,7 +42,9 @@ source('load_data.R')
 dn = amend_features(df_known)
 ##############################################
 ### Look at correlation to see whether multicollinearity could be present
-round(cor(dn), 2)
+cor_raw <- round(cor(dn), 3)
+cor_raw
+write.csv(cor_raw, file = "data/correlation_table")
 # As some variables are highly correlated, proceed with VIF test
 dn$return <- as.factor(dn$return)
 ### Create regression model that follows our specification for prediction to test for multicollinearity
