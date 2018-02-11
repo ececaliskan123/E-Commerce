@@ -5,7 +5,7 @@ if(!require("caret")) install.packages("caret"); library("caret")
 
 # good arguments agains pure svm approach: https://datascience.stackexchange.com/questions/989/svm-using-scikit-learn-runs-endlessly-and-never-completes-execution
 source('load_data.R')
-### TODO AMEND BLOCK AFTER FEATURE ENGINEERING
+source('helpers/amend_features.R')
 dn = amend_features(df_known)
 classdatan = amend_features(df_class)
 ###############################################
@@ -19,16 +19,16 @@ ts = dn[-idx.train, ]
 
 trainTask  = makeClassifTask(data = tr, target = "return", positive = 1)
 svmLearner = makeLearner(
-  "classif.ksvm",
+  "classif.svm",
   predict.type = "prob",
   par.vals = list(
-    kernel = "rbfdot"
+    kernel = "linear"
   )
 )
 
 svmParams = makeParamSet(
-  makeNumericParam("C", lower = -10, upper = 10, trafo = function(x) 2^x),
-  makeNumericParam("sigma", lower = -10, upper = 10, trafo = function(x) 2^x)
+  makeNumericParam("cost", lower = -10, upper = 10, trafo = function(x) 2^x)
+  #makeNumericParam("sigma", lower = -10, upper = 10, trafo = function(x) 2^x)
 )
 
 control = makeTuneControlRandom(maxit = 40)
