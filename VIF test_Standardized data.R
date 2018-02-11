@@ -1,5 +1,5 @@
 ## VIF test for multicollinearity with standardized data
-
+ 
 if(!require("mlr")) install.packages("mlr"); library("mlr")
 if(!require("data.table")) install.packages("data.table"); library("data.table")
 if(!require("lubridate")) install.packages("lubridate"); library("lubridate")
@@ -13,6 +13,7 @@ source('load_data.R')
 
 ### Process known dataset
 dn = amend_features(df_known)
+dn$return = as.numeric(as.character(dn$return))
 dn2 = amend_features_beta(df_known)
 ##############################################
 ### Look at correlation to see whether multicollinearity could be present
@@ -26,7 +27,7 @@ dn_na <- subset(dn_na, select = -c(order_date, delivery_date, user_reg_date))
 
 cor_raw2 <- round(cor(dn_na), 3)
 cor_raw2
-write.csv(cor_raw2, file = "data/correlation_table2.csv")
+write.csv(cor_raw2, file = "data/correlation_table_raw.csv")
 
 
 # As some variables are highly correlated, proceed with VIF test
