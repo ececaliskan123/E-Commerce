@@ -75,6 +75,7 @@ nnet_model<-mlr::train(tuned.nnet, trainTask)
 save(nnet_model, file = "models/nnet_mlr.model")
 
 # Predict on test set and assess performance based on auc and acc
+load("models/Nnet_mlr.model")
 yhat[["nnet_prob_test"]]<-predict(nnet_model, testTask)
 yhat[["nnet_class_test"]]<-yhat[["nnet_prob_test"]]$data$response
 auc[["nnet_test"]]<-mlr::performance(yhat[["nnet_prob_test"]], measures = mlr::auc)
@@ -121,6 +122,7 @@ nnet_imp_plot <- olden(mod_in = nnet_weights,
                       y_names = target_name,
                       x_names = feature_names,
                       bar_plot = TRUE)
+nnet_imp_plot
 save(nnet_imp_plot, file = "data/nnet_imp_plot")
 
 ## Calculate and plot PDPs for all variables
@@ -131,19 +133,10 @@ partialPlots <- list()
 # For each of the variables, calculate the partial dependence object for further use
 for (var in feature_names) {
   message("Now calculating for variable ", var)
-  partialPlots[[var]][["nnet"]] <- do.call(partial, 
-                                                list(nnet_model$learner.model, 
-                                                train = trainTask$env$data, 
-                                                pred.var = var, 
-                                                which.class = 1, 
-                                                type = "classification", 
-                                                plot = FALSE, prob = TRUE))
-  }
+  partialPlots[[var]] = generatePartialDependenceData(nnet_model,
+                                                      trainTask,
+                                                      var)
+}
 
 save(partialPlots, file = "data/nnet_PDPs_df")
-partialPlots
-par(mfrow=c(17, 1))
-for(var in names(partialPlots)){
-  plot(partialPlots[[var]][["nnet"]], type = "l", xlab = paste(var, " - nnet"), ylab = 'Pred. prob. return', ylim = c(0.1, 0.1), xlim = c(0.1, 0.1))
-}
 ###
