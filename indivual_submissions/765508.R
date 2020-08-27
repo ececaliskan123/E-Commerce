@@ -1,5 +1,3 @@
-# Felix Wolff - felix.wolff2@student.hpi.de
-
 library(caret)
 library(rpart)
 library(parallel)
