@@ -11,50 +11,32 @@ sample.size <- ceiling(n*0.8)
 idx.train <- createDataPartition(y =retail$return, p = 0.75, list = FALSE) 
 tr <- retail[idx.train, ] # training set
 ts <-  retail[-idx.train, ] # test set 
-#x_tr <- model.matrix(return ~  user_dob + user_maturity + user_state + item_price + item_color +item_size,data = retail -1, tr)
-#y_tr <- tr$return
-#x_ts <- model.matrix(return ~  user_dob + user_maturity + user_state + item_price + item_color +item_size,data = retail -1, ts)
-#y_ts <- ts$return
+
 prob_yhat <- list()
-# Logistic regression
-# lr <- glm(return~., data = tr, family = binomial(link = "logit"))
-# Regularized logistic regression
-# lasso <- glmnet(x = x_tr, y = y_tr, family = "binomial", standardize = TRUE,
-                # alpha = 1, nlambda = 100)
+
 # Decision tree
 dt <- rpart(return ~  user_dob + user_maturity + user_state + item_price + item_color +item_size, data = tr, method = "class", control = rpart.control(cp = 0.001, minsplit = 20)) # create decision tree classifier
-# yhat[["lr"]] <- predict(lr, newdata = ts, type = "response")
-# yhat[["lasso"]] <- as.vector( predict(lasso, newx = x_ts, s = 0.001, type = "response") )
+
 prob_yhat[["dt"]] <- predict(dt, newdata = ts, type = "prob")[, 2] 
 prob_yhat.df <- data.frame(prob_yhat)
 h <- HMeasure( as.numeric(ts$return)-1, prob_yhat.df, severity.ratio = 0.1) 
 auc_splitsampling <- h$metrics['AUC']
-
-
 auc_splitsampling
 
-
-
-
 # Model Selection: Picking the metaparameters
-
 set.seed(321)
 idx_validation <- createDataPartition(y = tr$return, p = 0.25, list = FALSE) 
 val <- tr[idx_validation, ] # training set
 tr_val <-  tr[-idx_validation, ] # test set 
-#x_tr_val <- model.matrix(return~.-1, tr_val)
-#y_tr_val <- tr_val$return
-#x_val <- model.matrix(return~.-1, val)
-#y_val <- val$return
+
 # Lambda tuning for Lasso
-# lasso_val <- glmnet(x = x, y = y, family = "binomial", standardize = TRUE,
+lasso_val <- glmnet(x = x, y = y, family = "binomial", standardize = TRUE,
                     # alpha = 1, nlambda = 100)
 
-# lambda_candidates <- data.frame("lambda" = lasso$lambda, "AUC" = NA)
-# for(i in 1:nrow(lambda_candidates)){
-  # yhat_val <- as.vector( predict(lasso_val, newx = x_val, s = lambda_candidates$lambda[i], type = "response") )
-  # lambda_candidates[i, "AUC"] <- ModelMetrics::auc( as.numeric(val$return)-1, yhat_val) 
-# }
+lambda_candidates <- data.frame("lambda" = lasso$lambda, "AUC" = NA)
+for(i in 1:nrow(lambda_candidates)){
+  yhat_val <- as.vector( predict(lasso_val, newx = x_val, s = lambda_candidates$lambda[i], type = "response") )
+  lambda_candidates[i, "AUC"] <- ModelMetrics::auc( as.numeric(val$return)-1, yhat_val)  }
 # Decision tree
 cp_candidates <- data.frame("cp" = seq(0, 0.025, length.out = 50),
                             "AUC" = NA)
@@ -64,27 +46,25 @@ for(i in 1:nrow(cp_candidates)){
   cp_candidates[i, "AUC"] <- ModelMetrics::auc( as.numeric(val$return)-1, prob_yhat_val) }
 # Training the optimal model on the full training data 
 # Best lamda candidate
-# lambda_candidates[which.max(lambda_candidates$AUC),]
+lambda_candidates[which.max(lambda_candidates$AUC),]
 # Decision tree
 cp_candidates[which.max(cp_candidates$AUC),]
 dt <- rpart(return ~  user_dob + user_maturity + user_state + item_price + item_color +item_size, data = tr, method = "class", control = rpart.control(cp = 0.003, minsplit = 20)) # create decision tree classifier
 prp(dt, extra = 104, border.col = 0, box.palette="auto")
 # Calculate the predictions 
-# yhat[["lr"]] <- predict(lr, newdata = ts, type = "response")
-# yhat[["lasso"]] <- as.vector( predict(lasso, newx = x_ts, s = 0.0099, type = "response") )
+yhat[["lr"]] <- predict(lr, newdata = ts, type = "response")
+yhat[["lasso"]] <- as.vector( predict(lasso, newx = x_ts, s = 0.0099, type = "response") )
 prob_yhat[["dt"]] <- predict(dt, newdata = ts, type = "prob")[, 2] 
 yhat_dt <- predict(dt, newdata = ts, type = "class")
 # Assess performance on the test data 
 prob_yhat.df <- data.frame(prob_yhat)  
 h_parameters_tuned <- HMeasure( as.numeric(ts$return)-1, prob_yhat.df, severity.ratio = 0.1) 
 auc_parameters_tuned <- h_parameters_tuned$metrics['AUC']
-
 auc_naive
 auc_splitsampling
 auc_parameters_tuned
 
 #  5 Fold Cross-validation for metaparameter selection
-
 k <- 5
 folds <- cut(1:nrow(tr), breaks = k, labels = FALSE)
 set.seed(123)
