@@ -6,27 +6,20 @@ if(!require("caret")) install.packages("caret"); library("caret")
 if(!require("klaR")) install.packages("klaR"); library("klaR")
 sales <- read_and_preprocess_data_file('data/BADS_WS1718_known.csv')
 
-# Reducing dimensionality for sizes and colors
-
+# Create data partition
 str(sales)
 set.seed(123)
 idx.sales <- createDataPartition(y = sales$return, p = 0.75, list = FALSE) # Draw a random, stratified sample including p percent of the data
 test <-  sales[-idx.sales, ] # test set
-sales <- sales[idx.sales, ] # salesing set
+train <- sales[idx.sales, ] # training set
 
-tapply(sales$item_color, sales$return, summary)
-
-sales$item_color <- factor(sales$item_color)
-sales$item_size <- factor(sales$item_size)
-sales$return <- factor(sales$return)
-sales$user_title <- factor(sales$user_title)
-sales$user_state <- factor(sales$user_state)
-sales$month_of_delivery <- factor(sales$month_of_delivery)
+tapply(train$item_color, train$return, summary)
+cols <- c("item_color", "item_size", "return", "user_title", "user_state","month_of_delivery")
+train[cols] <- lapply(train[cols], factor)
 
 #WOE
-
 # Use function woe() to calculate the weight of evidence for each factor level
-woe.object <- woe(return ~ item_size + item_color, data = sales, zeroadj = 0.5)
+woe.object <- woe(return ~ item_size + item_color, data = train, zeroadj = 0.5)
 # Note that you will see a warning message telling you about empty cells 
 # It is safe to ignore these messages as we set the parameter  
 
@@ -35,6 +28,7 @@ woe.object$woe
 summary(woe.object$xnew)
 
 test$return <- factor(test$return)
+
 # Need to drop the new levels in the test data
 missingLevelsToNA<-function(object,data){
   
@@ -53,23 +47,14 @@ missingLevelsToNA<-function(object,data){
   for (i in 1:length(predictors)){
     found<-data[,predictors[i]] %in% modelFactors[modelFactors$factors==predictors[i],]$factorLevels
     if (any(!found)) data[!found,predictors[i]]<-NA
-  }
-  
-  data
-  
-}
-# Use the Level drop code above and make sure sales and test are data frames.
+  } data}
+# Use the missingLevelsToNA function above and make sure training and test are data frames.
 
 test <- cbind(test[,"item_size" ],test [,"item_color"])
-test$item_color <- factor(test$item_color)
-test$item_size <- factor(test$item_size)
-test <- data.frame(test)
-sales <- data.frame(sales)
 pred_model <- glm(return ~ item_size + item_color ,data = sales,family = binomial(link = "logit"))
 test <- missingLevelsToNA(pred_model,test)
 test$item_color [is.na(test$item_color) ]  <- "black"
 test$item_size [is.na(test$item_size)] <- "m"
-test <- data.frame(test)
 
 test.woe <- predict(woe.object, newdata = test, replace = TRUE)
 #summary(test.woe)
@@ -81,7 +66,6 @@ barplot(-1 * woe.object$woe$item_color)
 barplot(-1 * woe.object$woe$item_size)
 
 #Information Value
-
 # using create_infotables from information package.
 # return should be binary integer
 IV <- create_infotables(data=sales, y="return", bins=10, parallel=TRUE)
