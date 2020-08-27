@@ -13,7 +13,7 @@ The directory is organized according to the structure of the written report in a
 
 `models/` for binary, saved models which can be loaded for inferring predictions
 
-`post_processing/` additional results exclusively used for pst-processing
+`post_processing/` additional results exclusively used for post-processing
 
 `stacking/` code for different stacking models 
 
