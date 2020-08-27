@@ -1,4 +1,4 @@
-### Assignment Report 
+### Code Structure
 
 
 For execution of all scripts, the working directory needs to be the project root.
