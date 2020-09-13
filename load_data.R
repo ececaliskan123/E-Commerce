@@ -20,46 +20,6 @@ if(!require("mlr")) install.packages("mlr"); library("mlr")
 ..static_user_statistics <- NULL
 ..read_and_preprocess_data_file = function(fp) {
   sales = read.csv(fp, stringsAsFactors = FALSE)
-  
-  sales$item_size [sales$item_size == "XS" ] <- "xs"
-  sales$item_size [sales$item_size == "XL" ] <- "xl"
-  sales$item_size [sales$item_size == "L" ] <- "l"
-  sales$item_size [sales$item_size == "M" ] <- "m"
-  sales$item_size [sales$item_size == "S" ] <- "s"
-  sales$item_size [sales$item_size == "XXL" ] <- "xxl"
-  sales$item_size [sales$item_size == "XXXL" ] <- "xxxl"
-  sales$item_size [sales$item_size == "36" ] <- "s"
-  sales$item_size [sales$item_size == "37" ] <- "s"
-  sales$item_size [sales$item_size == "38" ] <- "m"
-  sales$item_size [sales$item_size == "35" ] <- "xs"
-  sales$item_size [sales$item_size == "38+" ] <- "m"
-  sales$item_size [sales$item_size == "36+" ] <- "s"
-  sales$item_size [sales$item_size == "37+" ] <- "s"
-  sales$item_size [sales$item_size == "39+" ] <- "m"
-  sales$item_size [sales$item_size == "39" ] <- "m"
-  sales$item_size [sales$item_size == "40" ] <- "m"
-  sales$item_size [sales$item_size == "40+" ] <- "m"
-  sales$item_size [sales$item_size == "41" ] <- "l"
-  sales$item_size [sales$item_size == "41+" ] <- "l"
-  sales$item_size [sales$item_size == "42+" ] <- "l"
-  sales$item_size [sales$item_size == "42" ] <- "l"
-  sales$item_size [sales$item_size == "43" ] <- "l"
-  sales$item_size [sales$item_size == "43+" ] <- "xl"
-  sales$item_size [sales$item_size == "44+" ] <- "xl"
-  sales$item_size [sales$item_size == "44" ] <- "xl"
-  sales$item_size [sales$item_size == "45" ] <- "xl"
-  sales$item_size [sales$item_size == "45+" ] <- "xl"
-  sales$item_size [sales$item_size == "46" ] <- "xl"
-  sales$item_size [sales$item_size == "46+" ] <- "xl"
-  sales$item_size [sales$item_size == "47" ] <- "xxl"
-  sales$item_size [sales$item_size == "48" ] <- "xxl"
-  sales$item_size [sales$item_size == "50" ] <- "xxl"
-  sales$item_size [sales$item_size == "34" ] <- "xs"
-  sales$item_size [sales$item_size == "52" ] <- "xxxl"
-  sales$item_size [sales$item_size == "54" ] <- "xxxl"
-  sales$item_size [sales$item_size == "56" ] <- "xxxl"
-  
-  
   sales$user_dob <- substring(sales$user_dob,1,4)
   sales$user_dob [sales$user_dob == "?"] <- NA
   sales$user_dob [sales$user_dob < 1920 ] <-NA
@@ -72,7 +32,7 @@ if(!require("mlr")) install.packages("mlr"); library("mlr")
   sales$user_dob [zScores_sales_dob > 3] <- round(mean(sales$user_dob) + 3*sd(sales$user_dob), digit=0)
   sales$user_dob [zScores_sales_dob < -3] <- round(mean(sales$user_dob) - 3*sd(sales$user_dob), digit=0)
   
-  # order_date and delivery_date / data cleansing
+  # order_date and delivery_date / data cleaning
   sales$order_date <-   as.Date(sales$order_date, "%Y-%m-%d")
   sales$delivery_date <- as.Date(sales$delivery_date, "%Y-%m-%d")
   sales$delivery_duration<- difftime(sales$delivery_date , sales$order_date, units = c("days"))
@@ -81,7 +41,7 @@ if(!require("mlr")) install.packages("mlr"); library("mlr")
   sales$delivery_duration [is.na (sales$delivery_duration)] <- 2 
   sales$delivery_duration <- as.numeric(sales$delivery_duration) 
   
-  # item-price / data cleansing
+  # item-price / data cleaning
   sales$item_price <- as.numeric(sales$item_price)
   sort(table(sales$item_price), decreasing = TRUE) #MFV
   sales$item_price [is.na(sales$item_price) ] <- 59.9 
@@ -89,16 +49,16 @@ if(!require("mlr")) install.packages("mlr"); library("mlr")
   zScores <- ..standardize(sales$item_price)
   sales$item_price [zScores > 3] <- round(mean(sales$item_price) + 3*sd(sales$item_price), digit=2)
   
-  #user_reg_date / data cleansing
+  #user_reg_date / data cleaning
   sales$user_reg_date <-   as.Date(sales$user_reg_date, "%Y-%m-%d")
   sales$ user_maturity <- difftime(sales$order_date , sales$user_reg_dat, units = c("days"))
   sales$user_maturity <- as.numeric(sales$user_maturity) 
   
-  #user_title / data cleansing
+  #user_title / data cleaning
   sales$user_title [sales$user_title == "not reported"] <-NA
   sales$user_title [is.na(sales$user_title)] <- "Mrs"
   
-  #item_color /  data cleansing
+  #item_color /  data cleaning
   sales$item_color [sales$item_color == "blau"] <- "blue"
   sales$item_color [sales$item_color == "brwon"] <- "brown"
   sales$item_color [sales$item_color == "oliv"] <- "olive"
