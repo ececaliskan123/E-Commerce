@@ -3,7 +3,7 @@
 
 For execution of all scripts, the working directory needs to be the project root.
 
-The directory is organized according to the structure of the written report in addition to some auxiliary folders (helpers, individual_submissions, old)
+The directory is organized according to the structure of the written report in addition to some auxiliary folders (helpers, individual_submissions)
 
 `base_modeling/` code for model construction with mlr 
 
